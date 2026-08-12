@@ -244,4 +244,4 @@ pm2 start ecosystem.config.js && pm2 save && pm2 startup
 
 ## License
 
-本项目仅供学习交流使用。
+本项目采用 [GPL-3.0](LICENSE) 协议开源：你可以自由使用、修改、分发，但基于本项目的衍生作品必须同样以 GPL-3.0 开源。
