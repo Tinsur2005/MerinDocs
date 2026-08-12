@@ -1,0 +1,17 @@
+{
+  "name": "merin-docs",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently -n server,web -c green,cyan \"npm --prefix server run dev\" \"npm --prefix web run dev\"",
+    "dev:server": "npm --prefix server run dev",
+    "dev:web": "npm --prefix web run dev",
+    "build": "npm --prefix web run build",
+    "install:all": "npm install && npm --prefix server install && npm --prefix web install",
+    "install:mirror": "npm install --registry=https://registry.npmmirror.com && npm --prefix server install --registry=https://registry.npmmirror.com && npm --prefix web install --registry=https://registry.npmmirror.com",
+    "start": "npm run build && npm --prefix server run start"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  }
+}
