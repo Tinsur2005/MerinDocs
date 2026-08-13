@@ -5,6 +5,7 @@ import SideBar from './components/SideBar.vue';
 import DocHeader from './components/DocHeader.vue';
 import AppFooter from './components/AppFooter.vue';
 import { getTree } from './api';
+import { loadSiteConfig } from './siteConfig';
 
 const tree = ref([]);
 const sidebarOpen = ref(false);
@@ -12,6 +13,8 @@ const router = useRouter();
 const route = useRoute();
 
 onMounted(async () => {
+  // 站点自定义配置（标题 / 导航按钮 / 备案号等）要最先加载，供各组件使用
+  loadSiteConfig();
   try {
     const data = await getTree();
     tree.value = data.categories;

@@ -20,3 +20,5 @@ export const getHome = () => http.get('/api/home').then((r) => r.data);
 
 export const searchNotes = (q) =>
   http.get('/api/search', { params: { q } }).then((r) => r.data);
+
+export const getSiteConfig = () => http.get('/api/site-config').then((r) => r.data);

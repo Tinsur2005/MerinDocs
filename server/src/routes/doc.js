@@ -4,6 +4,7 @@ import { NOTE_DIR } from '../config.js';
 import { scanTree, getFlatList, clearCache } from '../services/scanner.js';
 import { renderFile, clearRenderCache } from '../services/parser.js';
 import { searchNotes, clearSearchCache } from '../services/search.js';
+import { getSiteConfig } from '../services/siteConfig.js';
 
 const router = Router();
 
@@ -58,6 +59,15 @@ router.get('/doc', async (req, res) => {
     res.json({ title, category, html: entry.html, toc: entry.toc, prev, next });
   } catch (e) {
     res.status(404).json({ error: e.message });
+  }
+});
+
+/** 站点自定义配置：标题 / 导航按钮 / 页脚备案等（server/site.config.json） */
+router.get('/site-config', async (req, res) => {
+  try {
+    res.json(await getSiteConfig());
+  } catch (e) {
+    res.status(500).json({ error: e.message });
   }
 });
 

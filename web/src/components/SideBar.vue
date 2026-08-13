@@ -156,7 +156,9 @@ function isActive(filePath) {
     <div v-if="!tree.length" class="sidebar-empty">加载中...</div>
     <div v-for="cat in tree" :key="cat.name" class="cat">
       <div class="cat-title" @click="toggle(cat.name)">
-        <span class="cat-arrow" :class="{ collapsed: collapsed[cat.name] }">▾</span>
+        <span class="cat-arrow" :class="{ collapsed: collapsed[cat.name] }">
+          <svg viewBox="0 0 10 10" aria-hidden="true"><path d="M2 3 L5 7 L8 3 Z" fill="currentColor"></path></svg>
+        </span>
         <span class="cat-name">{{ cat.name }}</span>
         <span class="cat-count">{{ cat.files.length }}</span>
       </div>

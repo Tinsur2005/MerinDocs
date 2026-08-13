@@ -21,7 +21,8 @@
 - 🖼️ **图片灯箱**：点击正文图片放大，支持滚轮缩放
 - 📋 **代码块增强**：显示语言标识 + 一键复制按钮
 - ⬅️➡️ **上一篇 / 下一篇**：按分类内排序自动生成上下篇导航
-- 🧭 **顶部菜单**：右侧预留两个菜单按钮位（按钮1 / 按钮2，可自定义）
+- ⚙️ **站点配置**：标题 / 导航按钮 / 页脚备案等通过 `server/site.config.json` 一键自定义，改完刷新即生效
+- 🧭 **顶部菜单**：导航栏标题 + 右侧菜单按钮（数量、文字、跳转均可配置），窄屏自动折叠成下拉
 - 🔗 **图片路径自动解析**：支持相对路径、中文文件名、URL 编码图片
 - 🔄 **缓存刷新接口**：`POST /api/refresh` 更新笔记后无需重启
 - 🌐 **SPA 单端口**：生产环境后端直接托管前端构建产物，一个端口搞定页面 / 接口 / 图片
@@ -50,11 +51,12 @@ merin-docs/
 │   ├── ...
 │   └── assets/               # 笔记用到的图片
 ├── server/                   # Node.js 后端（Express）
+│   ├── site.config.json      # ⚙️ 站点自定义配置（标题 / 导航按钮 / 页脚备案）
 │   └── src/
 │       ├── index.js          # 入口：API + 托管前端 + SPA 回退
-│       ├── config.js         # ⚙️ 端口 / 笔记路径 / 分类排序
-│       ├── routes/doc.js     # /api/tree · /api/doc · /api/home · /api/refresh
-│       └── services/         # 目录扫描 + Markdown 解析
+│       ├── config.js         # 端口 / 笔记路径 / 分类排序
+│       ├── routes/doc.js     # /api/tree · /api/doc · /api/home · /api/search · /api/site-config · /api/refresh
+│       └── services/         # 目录扫描 + Markdown 解析 + 搜索 + 站点配置
 ├── web/                      # Vue 3 前端
 │   ├── src/
 │   │   ├── components/       # 顶栏 / 侧边栏 / 内容区 / 页脚
@@ -148,16 +150,40 @@ server: {
 
 前端端口、后端地址都在这改（开发时前后端分离跑）。
 
-### 6. 页面标题 / 导航标题 / 页脚 —— `web/src`
+### 6. 页面标题 / 导航标题 / 页脚 —— `server/site.config.json`
 
-| 想改什么 | 位置 |
-| --- | --- |
-| 浏览器标签页标题 | `web/index.html` 里的 `<title>` |
-| 顶部导航栏标题 | `web/src/components/DocHeader.vue` |
-| 顶部菜单按钮（按钮1 / 按钮2） | `web/src/components/DocHeader.vue` |
-| 页脚版权 / powered by | `web/src/components/AppFooter.vue` |
+站点自定义信息统一放在 `server/site.config.json` 一个文件里配置，**改完刷新浏览器即可生效，无需重新构建、无需重启**：
 
-> 改完前端记得重新 `npm run build`。
+```json
+{
+  "siteTitle": "MerinDocs - 记录学习过程的个人知识库",
+  "navbar": {
+    "title": "MerinDocs",
+    "buttons": [
+      { "text": "返回博客", "url": "https://www.tinsur.cn", "target": "_blank" },
+      { "text": "文档首页", "url": "/", "target": "_self" }
+    ]
+  },
+  "footer": {
+    "copyrightText": "Tinsur",
+    "copyrightUrl": "https://www.tinsur.cn/merindocs",
+    "poweredByText": "MerinDocs文档系统",
+    "poweredByUrl": "https://www.tinsur.cn/merindocs",
+    "beian": {
+      "icpText": "你的ICP备案号",
+      "icpUrl": "https://beian.miit.gov.cn/",
+      "gonganText": "你的公网安备案号",
+      "gonganUrl": "https://beian.mps.gov.cn/#/query/webSearch?code=你的备案号",
+      "gonganIcon": "你的公网安图标地址"
+    }
+  }
+}
+```
+
+- 浏览器标题 = `siteTitle`；导航栏标题与右上角按钮 = `navbar`；页脚版权 / Powered By / 备案号 = `footer`
+- `navbar.buttons` 可加任意多个；`url` 以 `/` 开头是站内路由，否则是外链
+- 把字段设为空字符串 `""` 可隐藏对应内容（如不想要的备案号）
+- 详情见 **docs/4-自定义配置/站点信息.md**
 
 ### 7. 生产进程 —— `ecosystem.config.js`
 

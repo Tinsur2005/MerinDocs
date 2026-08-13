@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router';
 import DocContent from '../components/DocContent.vue';
 import NotFoundView from './NotFoundView.vue';
 import { getDoc, getCachedDoc } from '../api';
+import { siteConfig } from '../siteConfig';
 
 const route = useRoute();
 const router = useRouter();
@@ -17,14 +18,14 @@ async function load(path) {
   if (hit) {
     doc.value = hit;
     // 打开笔记后，浏览器标签页标题改为当前笔记标题
-    document.title = hit.title || 'MerinDocs';
+    document.title = hit.title || siteConfig.value.siteTitle;
     return;
   }
   loading.value = true;
   try {
     doc.value = await getDoc(path);
     // 打开笔记后，浏览器标签页标题改为当前笔记标题
-    document.title = doc.value.title || 'MerinDocs';
+    document.title = doc.value.title || siteConfig.value.siteTitle;
   } catch (e) {
     console.error('加载文档失败', e);
     doc.value = null;

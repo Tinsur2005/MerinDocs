@@ -2,12 +2,15 @@
 import { ref, onMounted } from 'vue';
 import DocContent from '../components/DocContent.vue';
 import { getHome } from '../api';
+import { siteConfig } from '../siteConfig';
 
 const doc = ref(null);
 const loading = ref(true);
 const missing = ref(false);
 
 onMounted(async () => {
+  // 回到首页时，浏览器标题恢复为站点标题（来自 site.config.json）
+  document.title = siteConfig.value.siteTitle;
   try {
     const data = await getHome();
     if (data.exists) {
