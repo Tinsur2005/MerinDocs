@@ -139,8 +139,8 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div v-if="loading" class="doc-placeholder">加载中...</div>
-  <div v-else-if="doc" class="doc-layout">
+  <!-- 先渲染内容：切换文章时保留旧内容可见，避免整屏闪"加载中" -->
+  <div v-if="doc" class="doc-layout">
     <article class="doc-article">
       <!-- 标题由 markdown-body 里的 h1 自然渲染，避免重复 -->
       <div class="markdown-body" v-html="doc.html"></div>
@@ -168,6 +168,7 @@ onBeforeUnmount(() => {
       </ul>
     </aside>
   </div>
+  <div v-else-if="loading" class="doc-placeholder">加载中...</div>
   <div v-else class="doc-placeholder">请从左侧选择一篇文档</div>
 
   <!-- 图片灯箱 -->

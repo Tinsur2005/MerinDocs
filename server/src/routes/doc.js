@@ -1,9 +1,8 @@
 import { Router } from 'express';
-import fs from 'node:fs/promises';
 import path from 'node:path';
 import { NOTE_DIR } from '../config.js';
 import { scanTree, getFlatList, clearCache } from '../services/scanner.js';
-import { renderMarkdown } from '../services/parser.js';
+import { renderFile, clearRenderCache } from '../services/parser.js';
 
 const router = Router();
 
@@ -21,16 +20,13 @@ router.get('/tree', async (req, res) => {
 router.get('/home', async (req, res) => {
   try {
     const absPath = path.join(NOTE_DIR, 'README.md');
-    let content;
+    let entry;
     try {
-      content = await fs.readFile(absPath, 'utf-8');
+      entry = await renderFile(absPath);
     } catch {
       return res.json({ exists: false });
     }
-    const { html, toc } = renderMarkdown(content, absPath);
-    const titleMatch = content.match(/^#\s+(.+)$/m);
-    const title = titleMatch ? titleMatch[1].trim() : '首页';
-    res.json({ exists: true, title, html, toc });
+    res.json({ exists: true, title: entry.title || '首页', html: entry.html, toc: entry.toc });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
@@ -49,11 +45,8 @@ router.get('/doc', async (req, res) => {
       return res.status(403).json({ error: 'forbidden' });
     }
 
-    const content = await fs.readFile(absPath, 'utf-8');
-    const { html, toc } = renderMarkdown(content, absPath);
-
-    const titleMatch = content.match(/^#\s+(.+)$/m);
-    const title = titleMatch ? titleMatch[1].trim() : path.basename(relPath, '.md');
+    const entry = await renderFile(absPath);
+    const title = entry.title || path.basename(relPath, '.md');
 
     const flat = await getFlatList();
     const idx = flat.findIndex((f) => f.path === relPath);
@@ -61,15 +54,16 @@ router.get('/doc', async (req, res) => {
     const next = idx >= 0 && idx < flat.length - 1 ? flat[idx + 1] : null;
 
     const category = relPath.split('/')[0];
-    res.json({ title, category, html, toc, prev, next });
+    res.json({ title, category, html: entry.html, toc: entry.toc, prev, next });
   } catch (e) {
     res.status(404).json({ error: e.message });
   }
 });
 
-/** 刷新目录扫描缓存（新增笔记后调用，无需重启） */
+/** 刷新目录扫描缓存 + 渲染缓存（新增/修改笔记后调用，无需重启） */
 router.post('/refresh', (req, res) => {
   clearCache();
+  clearRenderCache();
   res.json({ ok: true });
 });
 

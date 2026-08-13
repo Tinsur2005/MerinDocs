@@ -1,4 +1,5 @@
 import path from 'node:path';
+import fs from 'node:fs/promises';
 import MarkdownIt from 'markdown-it';
 import hljs from 'highlight.js';
 import { NOTE_DIR } from '../config.js';
@@ -88,4 +89,35 @@ export function renderMarkdown(content, filePath) {
   const env = { filePath, toc: [] };
   const html = md.render(content, env);
   return { html, toc: env.toc };
+}
+
+/** 渲染缓存：key = 文件绝对路径，value = { mtimeMs, title, html, toc } */
+const renderCache = new Map();
+
+/**
+ * 渲染一个 md 文件并缓存结果。
+ * 文件修改时间变化时自动重新渲染；重复请求直接返回缓存，
+ * 大幅加快长文 / 多图 / 多代码块页面的打开速度。
+ */
+export async function renderFile(absPath) {
+  const stat = await fs.stat(absPath);
+  const cached = renderCache.get(absPath);
+  if (cached && cached.mtimeMs === stat.mtimeMs) return cached;
+
+  const content = await fs.readFile(absPath, 'utf-8');
+  const { html, toc } = renderMarkdown(content, absPath);
+  const titleMatch = content.match(/^#\s+(.+)$/m);
+  const entry = {
+    mtimeMs: stat.mtimeMs,
+    title: titleMatch ? titleMatch[1].trim() : '',
+    html,
+    toc,
+  };
+  renderCache.set(absPath, entry);
+  return entry;
+}
+
+/** 清空渲染缓存（笔记更新后配合目录扫描缓存一起清） */
+export function clearRenderCache() {
+  renderCache.clear();
 }

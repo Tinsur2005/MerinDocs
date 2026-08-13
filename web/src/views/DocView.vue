@@ -3,7 +3,7 @@ import { ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import DocContent from '../components/DocContent.vue';
 import NotFoundView from './NotFoundView.vue';
-import { getDoc } from '../api';
+import { getDoc, getCachedDoc } from '../api';
 
 const route = useRoute();
 const router = useRouter();
@@ -12,12 +12,23 @@ const loading = ref(false);
 
 async function load(path) {
   if (!path) return;
+  // 缓存命中：直接秒开，不显示加载中
+  const hit = getCachedDoc(path);
+  if (hit) {
+    doc.value = hit;
+    // 打开笔记后，浏览器标签页标题改为当前笔记标题
+    document.title = hit.title || 'MerinDocs';
+    return;
+  }
   loading.value = true;
   try {
     doc.value = await getDoc(path);
+    // 打开笔记后，浏览器标签页标题改为当前笔记标题
+    document.title = doc.value.title || 'MerinDocs';
   } catch (e) {
     console.error('加载文档失败', e);
     doc.value = null;
+    document.title = '404 - MerinDocs';
   } finally {
     loading.value = false;
   }
