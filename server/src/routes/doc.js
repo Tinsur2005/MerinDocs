@@ -3,6 +3,7 @@ import path from 'node:path';
 import { NOTE_DIR } from '../config.js';
 import { scanTree, getFlatList, clearCache } from '../services/scanner.js';
 import { renderFile, clearRenderCache } from '../services/parser.js';
+import { searchNotes, clearSearchCache } from '../services/search.js';
 
 const router = Router();
 
@@ -60,10 +61,23 @@ router.get('/doc', async (req, res) => {
   }
 });
 
-/** 刷新目录扫描缓存 + 渲染缓存（新增/修改笔记后调用，无需重启） */
+/** 全库全局搜索：按关键词匹配笔记标题/正文，返回带摘要的命中列表 */
+router.get('/search', async (req, res) => {
+  try {
+    const q = (req.query.q || '').trim();
+    if (!q) return res.json({ query: q, results: [] });
+    const results = await searchNotes(q);
+    res.json({ query: q, results });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+/** 刷新目录扫描缓存 + 渲染缓存 + 搜索文本缓存（新增/修改笔记后调用，无需重启） */
 router.post('/refresh', (req, res) => {
   clearCache();
   clearRenderCache();
+  clearSearchCache();
   res.json({ ok: true });
 });
 
