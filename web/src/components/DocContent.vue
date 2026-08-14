@@ -3,7 +3,6 @@ import { ref, watch, nextTick, onMounted, onUpdated, onBeforeUnmount } from 'vue
 
 const props = defineProps({
   doc: { type: Object, default: null },
-  loading: { type: Boolean, default: false },
 });
 const emit = defineEmits(['navigate']);
 
@@ -12,6 +11,15 @@ const activeId = ref('');
 // 灯箱状态
 const lightboxSrc = ref('');
 const scale = ref(1);
+
+// 复制成功提示（底部 toast，1.8s 自动消失）
+const toast = ref('');
+let toastTimer = 0;
+function showToast(msg) {
+  toast.value = msg;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => (toast.value = ''), 1800);
+}
 
 function scrollToHeading(id) {
   const el = document.getElementById(id);
@@ -84,6 +92,7 @@ function enhanceCodeBlocks() {
         await navigator.clipboard.writeText(code.textContent);
         btn.textContent = '已复制';
         setTimeout(() => (btn.textContent = '复制'), 1500);
+        showToast('复制成功');
       } catch {
         btn.textContent = '失败';
       }
@@ -127,6 +136,13 @@ watch(
       enhanceImages();
       updateActive();
       window.scrollTo({ top: 0 });
+      // 新文档渐显：移除再重新加回淡入 class，触发 CSS 动画重播
+      const el = document.querySelector('.doc-layout');
+      if (el) {
+        el.classList.remove('doc-fade-in');
+        void el.offsetWidth; // 强制重排以重新触发动画
+        el.classList.add('doc-fade-in');
+      }
     });
   }
 );
@@ -143,28 +159,68 @@ onUpdated(() => {
 onMounted(() => {
   window.addEventListener('scroll', updateActive, { passive: true });
   window.addEventListener('keydown', onKey);
+  // 进入新文档（组件挂载）：补跑代码块/图片增强、刷新 TOC 高亮并回到顶部
+  nextTick(() => {
+    enhanceCodeBlocks();
+    enhanceImages();
+    updateActive();
+    window.scrollTo({ top: 0 });
+  });
 });
 onBeforeUnmount(() => {
   window.removeEventListener('scroll', updateActive);
   window.removeEventListener('keydown', onKey);
   // 组件卸载时若有灯箱残留，恢复页面滚动
   document.body.style.overflow = '';
+  clearTimeout(toastTimer);
 });
 </script>
 
 <template>
   <!-- 先渲染内容：切换文章时保留旧内容可见，避免整屏闪"加载中" -->
-  <div v-if="doc" class="doc-layout">
+  <div v-if="doc" class="doc-layout doc-fade-in">
     <article class="doc-article">
       <!-- 标题由 markdown-body 里的 h1 自然渲染，避免重复 -->
       <div class="markdown-body" v-html="doc.html"></div>
       <nav class="doc-nav">
         <button v-if="doc.prev" class="nav-btn" @click="emit('navigate', doc.prev)">
-          ← {{ doc.prev.name }}
+          <span class="nav-btn-label">上一篇：{{ doc.prev.name }}</span>
+          <!-- 外链型文档：标题后显示外链标识 -->
+          <svg
+            v-if="doc.prev.redirect"
+            class="nav-btn-link"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+            <polyline points="15 3 21 3 21 9"></polyline>
+            <line x1="10" y1="14" x2="21" y2="3"></line>
+          </svg>
         </button>
         <span v-else />
         <button v-if="doc.next" class="nav-btn" @click="emit('navigate', doc.next)">
-          {{ doc.next.name }} →
+          <span class="nav-btn-label">下一篇：{{ doc.next.name }}</span>
+          <!-- 外链型文档：标题后显示外链标识 -->
+          <svg
+            v-if="doc.next.redirect"
+            class="nav-btn-link"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+            <polyline points="15 3 21 3 21 9"></polyline>
+            <line x1="10" y1="14" x2="21" y2="3"></line>
+          </svg>
         </button>
       </nav>
     </article>
@@ -182,8 +238,14 @@ onBeforeUnmount(() => {
       </ul>
     </aside>
   </div>
-  <div v-else-if="loading" class="doc-placeholder">加载中...</div>
   <div v-else class="doc-placeholder">请从左侧选择一篇文档</div>
+
+  <!-- 复制成功提示：底部居中消息条 -->
+  <teleport to="body">
+    <Transition name="toast-fade">
+      <div v-if="toast" class="copy-toast">{{ toast }}</div>
+    </Transition>
+  </teleport>
 
   <!-- 图片灯箱：@wheel.prevent 拦截整个蒙层的滚轮，保证背景页面不被滑动 -->
   <teleport to="body">

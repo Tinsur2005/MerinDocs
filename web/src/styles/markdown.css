@@ -68,10 +68,11 @@
   color: #d63384;
 }
 
-/* 夜间模式下行内代码：亮底下的深粉色在暗底上看不清，换浅色（:not(pre code) 排除代码块） */
+/* 夜间模式下行内代码：用代码块同族的深色底 + 浅色文字，整体贴近深色代码块风格
+   （:not(pre code) 排除代码块，避免污染 pre 内的高亮 token） */
 :root[data-theme='dark'] .markdown-body code:not(pre code) {
-  background: rgba(220, 220, 220, 0.12);
-  color: #f08cae;
+  background: var(--color-code-header);
+  color: var(--hl-base);
 }
 
 /* ===== 代码块：header + 行号 + 代码 ===== */
@@ -79,8 +80,8 @@
   margin: 18px 0;
   border-radius: 8px;
   overflow: hidden;
-  background: #0d1117;
-  border: 1px solid #30363d;
+  background: var(--color-code-bg);
+  border: 1px solid var(--color-code-border);
 }
 
 .code-header {
@@ -88,13 +89,13 @@
   justify-content: space-between;
   align-items: center;
   padding: 6px 14px;
-  background: #161b22;
-  border-bottom: 1px solid #30363d;
+  background: var(--color-code-header);
+  border-bottom: 1px solid var(--color-code-border);
 }
 
 .code-lang {
   font-size: 12px;
-  color: #8b949e;
+  color: var(--color-code-lang);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   user-select: none;
@@ -102,9 +103,9 @@
 
 .code-copy {
   font-size: 12px;
-  color: #c9d1d9;
-  background: #21262d;
-  border: 1px solid #30363d;
+  color: var(--color-code-btn);
+  background: var(--color-code-btn-bg);
+  border: 1px solid var(--color-code-border);
   border-radius: 4px;
   padding: 3px 10px;
   cursor: pointer;
@@ -112,8 +113,8 @@
 }
 
 .code-copy:hover {
-  background: #30363d;
-  color: #fff;
+  background: var(--color-code-btn-hover);
+  color: var(--color-code-btn);
 }
 
 .code-content {
@@ -125,8 +126,8 @@
   flex-shrink: 0;
   padding: 12px 10px 12px 14px;
   text-align: right;
-  color: #6e7681;
-  background: #0d1117;
+  color: var(--color-code-gutter);
+  background: var(--color-code-bg);
   font-size: 13.5px;
   font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
   line-height: 1.6;
@@ -139,7 +140,8 @@
   flex: 1;
   overflow-x: auto;
   padding: 12px 14px;
-  background: #0d1117;
+  background: var(--color-code-bg);
+  color: var(--hl-base);
   border-radius: 0;
   line-height: 1.6;
 }
@@ -151,6 +153,95 @@
   line-height: 1.6;
   background: transparent;
   padding: 0;
+  color: var(--hl-base);
+}
+
+/* 代码高亮 token 配色：全部走变量，浅色 = GitHub Light，深色 = GitHub Dark */
+.markdown-body .hljs-doctag,
+.markdown-body .hljs-keyword,
+.markdown-body .hljs-meta .hljs-keyword,
+.markdown-body .hljs-template-tag,
+.markdown-body .hljs-template-variable,
+.markdown-body .hljs-type,
+.markdown-body .hljs-variable.language_ {
+  color: var(--hl-keyword);
+}
+
+.markdown-body .hljs-title,
+.markdown-body .hljs-title.class_,
+.markdown-body .hljs-title.class_.inherited__,
+.markdown-body .hljs-title.function_ {
+  color: var(--hl-title);
+}
+
+.markdown-body .hljs-attr,
+.markdown-body .hljs-attribute,
+.markdown-body .hljs-literal,
+.markdown-body .hljs-meta,
+.markdown-body .hljs-number,
+.markdown-body .hljs-operator,
+.markdown-body .hljs-variable,
+.markdown-body .hljs-selector-attr,
+.markdown-body .hljs-selector-class,
+.markdown-body .hljs-selector-id {
+  color: var(--hl-constant);
+}
+
+.markdown-body .hljs-regexp,
+.markdown-body .hljs-string,
+.markdown-body .hljs-meta .hljs-string {
+  color: var(--hl-string);
+}
+
+.markdown-body .hljs-built_in,
+.markdown-body .hljs-symbol {
+  color: var(--hl-builtin);
+}
+
+.markdown-body .hljs-comment,
+.markdown-body .hljs-code,
+.markdown-body .hljs-formula {
+  color: var(--hl-comment);
+}
+
+.markdown-body .hljs-name,
+.markdown-body .hljs-quote,
+.markdown-body .hljs-selector-tag,
+.markdown-body .hljs-selector-pseudo {
+  color: var(--hl-tag);
+}
+
+.markdown-body .hljs-subst,
+.markdown-body .hljs-emphasis,
+.markdown-body .hljs-strong {
+  color: var(--hl-base);
+}
+
+.markdown-body .hljs-section {
+  color: var(--hl-section);
+  font-weight: bold;
+}
+
+.markdown-body .hljs-bullet {
+  color: var(--hl-bullet);
+}
+
+.markdown-body .hljs-emphasis {
+  font-style: italic;
+}
+
+.markdown-body .hljs-strong {
+  font-weight: bold;
+}
+
+.markdown-body .hljs-addition {
+  color: var(--hl-addition);
+  background-color: var(--hl-addition-bg);
+}
+
+.markdown-body .hljs-deletion {
+  color: var(--hl-deletion);
+  background-color: var(--hl-deletion-bg);
 }
 
 /* 图片：缩放并居中 */

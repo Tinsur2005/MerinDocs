@@ -1,6 +1,8 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import DocContent from '../components/DocContent.vue';
+import LoadingSpinner from '../components/LoadingSpinner.vue';
+import ProgressBar from '../components/ProgressBar.vue';
 import { getHome } from '../api';
 import { siteConfig } from '../siteConfig';
 
@@ -35,7 +37,9 @@ onMounted(async () => {
 </script>
 
 <template>
-  <DocContent :doc="doc" :loading="loading" />
+  <ProgressBar :loading="loading" />
+  <LoadingSpinner v-if="loading" />
+  <DocContent v-else-if="doc" :doc="doc" />
   <div v-if="!loading && missing" class="doc-placeholder">
     尚未创建 README.md，请在 note 目录添加首页内容。
   </div>

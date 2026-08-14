@@ -10,12 +10,39 @@
   --color-text: #2c3e50;
   --color-text-secondary: #666;
   --color-muted: #999;
-  --color-primary: #3eaf7c;
+  --color-primary: #349e70;
   --color-border: #eaecef;
   --color-sidebar-bg: #f8f9fa;
   --color-hover: #ecf5f0;
   --color-tag-bg: #e3e6e8;
-  --color-header-bg: #3eaf7c;
+  --color-header-bg: #349e70;
+  /* 滚动条配色：浅色模式用中性浅灰 */
+  --color-scrollbar-thumb: #cdd3d9;
+  --color-scrollbar-thumb-hover: #b1b9c2;
+  /* 代码块外壳：浅色模式用 GitHub Light 同族色 */
+  --color-code-bg: #f6f8fa;
+  --color-code-border: #d0d7de;
+  --color-code-header: #eaeef2;
+  --color-code-gutter: #6e7781;
+  --color-code-lang: #57606a;
+  --color-code-btn: #24292f;
+  --color-code-btn-bg: #eaeef2;
+  --color-code-btn-hover: #d0d7de;
+  /* 代码高亮 token 配色：GitHub Light */
+  --hl-base: #24292e;
+  --hl-keyword: #d73a49;
+  --hl-title: #6f42c1;
+  --hl-constant: #005cc5;
+  --hl-string: #032f62;
+  --hl-builtin: #e36209;
+  --hl-comment: #6a737d;
+  --hl-tag: #22863a;
+  --hl-section: #005cc5;
+  --hl-bullet: #735c0f;
+  --hl-addition: #22863a;
+  --hl-addition-bg: #f0fff4;
+  --hl-deletion: #b31d28;
+  --hl-deletion-bg: #ffeef0;
   --header-height: 56px;
   --sidebar-width: 260px;
 }
@@ -32,6 +59,35 @@
   --color-hover: #232323;
   --color-tag-bg: #2a2a2a;
   --color-header-bg: #1f1f1f;
+  /* 滚动条配色：深色模式用中性深灰 */
+  --color-scrollbar-thumb: #3d3d3d;
+  --color-scrollbar-thumb-hover: #505050;
+  /* 夜间强调色：不用浅色模式的绿色，换成更亮的天蓝，整站统一 */
+  --color-primary: #5ab0ff;
+  /* 代码块外壳：深色模式沿用 GitHub Dark 同族色 */
+  --color-code-bg: #0d1117;
+  --color-code-border: #30363d;
+  --color-code-header: #161b22;
+  --color-code-gutter: #6e7681;
+  --color-code-lang: #8b949e;
+  --color-code-btn: #c9d1d9;
+  --color-code-btn-bg: #21262d;
+  --color-code-btn-hover: #30363d;
+  /* 代码高亮 token 配色：GitHub Dark */
+  --hl-base: #c9d1d9;
+  --hl-keyword: #ff7b72;
+  --hl-title: #d2a8ff;
+  --hl-constant: #79c0ff;
+  --hl-string: #a5d6ff;
+  --hl-builtin: #ffa657;
+  --hl-comment: #8b949e;
+  --hl-tag: #7ee787;
+  --hl-section: #1f6feb;
+  --hl-bullet: #f2cc60;
+  --hl-addition: #aff5b4;
+  --hl-addition-bg: #033a16;
+  --hl-deletion: #ffdcd7;
+  --hl-deletion-bg: #67060c;
 }
 
 html,
@@ -48,6 +104,37 @@ body {
   font-size: 15px;
   line-height: 1.6;
   overflow-x: hidden; /* 兜底：禁止页面整体横向滚动 */
+}
+
+/* 统一滚动条美化：细窄、圆角、两侧悬浮留白，颜色随深浅主题
+   （覆盖页面滚动、侧栏、TOC、搜索下拉、代码块横向滚动等所有滚动容器） */
+* {
+  scrollbar-width: thin; /* Firefox 细滚动条 */
+  scrollbar-color: var(--color-scrollbar-thumb) transparent; /* Firefox 配色 */
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-scrollbar-thumb);
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-clip: content-box; /* 两侧留白 2px，视觉更纤细 */
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-scrollbar-thumb-hover);
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
 }
 
 .app {
@@ -258,6 +345,7 @@ body {
   flex: 1;
   min-width: 0; /* 关键：防止内容撑开导致横向滚动 */
   padding: 32px 40px 0;
+  position: relative; /* 作为加载遮罩的定位基准（只覆盖正文区域） */
 }
 
 /* Sidebar */
@@ -286,7 +374,8 @@ body {
   color: var(--color-muted);
 }
 
-/* 导航栏收起/展开按钮：导航与正文之间的一条竖直细条，悬停高亮 */
+/* 导航栏收起/展开按钮：导航与正文之间的一条竖直细条；兼作拖拽手柄
+   （拖动左右拉伸宽度，点击收起/展开），光标用左右拉伸提示 */
 .sidebar-toggle {
   width: 18px;
   flex-shrink: 0;
@@ -298,9 +387,13 @@ body {
   height: calc(100vh - var(--header-height));
   background: transparent;
   border: none;
-  cursor: pointer;
+  cursor: ew-resize;
   color: var(--color-muted);
   transition: color 0.15s, background 0.15s;
+  /* 触屏关键：不让浏览器把手指滑动当作滚动/平移接管，pointermove 才能持续收到 */
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 .sidebar-toggle:hover {
@@ -308,10 +401,26 @@ body {
   background: var(--color-hover);
 }
 
+/* 触屏设备（平板/触屏笔记本）：没有 hover，加宽手柄便于手指抓取 */
+@media (pointer: coarse) {
+  .sidebar-toggle {
+    width: 30px;
+  }
+}
+
 .sidebar-toggle svg {
   width: 15px;
   height: 15px;
   flex-shrink: 0;
+}
+
+/* 拖拽调整宽度期间：关闭宽度过渡避免滞后，并禁止选中文字 */
+:root.resizing .sidebar {
+  transition: none;
+}
+
+:root.resizing body {
+  user-select: none;
 }
 
 /* Sidebar 全局搜索 */
@@ -357,6 +466,11 @@ body {
 .search-input-wrap input:focus {
   border-color: var(--color-primary);
   box-shadow: 0 0 0 3px rgba(62, 175, 124, 0.12);
+}
+
+/* 夜间模式：焦点光晕跟随天蓝强调色 */
+:root[data-theme='dark'] .search-input-wrap input:focus {
+  box-shadow: 0 0 0 3px rgba(90, 176, 255, 0.2);
 }
 
 .search-clear {
@@ -500,11 +614,17 @@ body {
   transform: rotate(-90deg);
 }
 
+/* 分类名：导航栏变窄时用省略号截断，不换行 */
 .cat-name {
   flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .cat-count {
+  flex-shrink: 0;
   font-size: 12px;
   color: var(--color-muted);
   background: var(--color-tag-bg);
@@ -593,6 +713,128 @@ body {
   margin: 0 auto;
 }
 
+/* 文章加载中：转圈 spinner 居中显示（Home 首页独立加载用） */
+.doc-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 110px 0;
+  color: var(--color-muted);
+  font-size: 14px;
+}
+
+.spinner {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 3px solid var(--color-border);
+  border-top-color: var(--color-primary);
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* 文档页加载遮罩：只覆盖正文区域（不遮左侧导航栏/顶部）。
+   inset:0 盖满整个正文内容（含当前视口上下），无论滚到哪都全遮；
+   转圈圈由内部 .doc-loading-center 用 sticky 跟随视口居中 */
+.doc-loading-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(2px);
+  color: var(--color-muted);
+  font-size: 14px;
+}
+
+/* 转圈圈居中框：sticky 贴住视口，加载中滚动页面时圆圈始终在当前视口中央 */
+.doc-loading-center {
+  position: sticky;
+  top: var(--header-height);
+  height: calc(100vh - var(--header-height));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+
+:root[data-theme='dark'] .doc-loading-overlay {
+  background: rgba(16, 16, 16, 0.6);
+}
+
+/* 加载遮罩淡入淡出 */
+.overlay-fade-enter-active,
+.overlay-fade-leave-active {
+  transition: opacity 0.25s ease;
+}
+.overlay-fade-enter-from,
+.overlay-fade-leave-to {
+  opacity: 0;
+}
+
+/* 新文档渐显：切换文档时重播（doc-fade-in class 移除再加回），轻微上浮淡入 */
+.doc-layout.doc-fade-in {
+  animation: doc-fade-in 0.3s ease;
+}
+
+@keyframes doc-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 加载进度条：固定贴页面最顶端。
+   浅色模式顶栏为绿色，进度条用白色才清晰（与顶栏白字一致）；深色模式用主题天蓝 */
+.progress-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 3px;
+  z-index: 60;
+  background: #fff;
+  transition: width 0.2s ease;
+  box-shadow: 0 1px 4px rgba(255, 255, 255, 0.55);
+}
+
+:root[data-theme='dark'] .progress-bar {
+  background: var(--color-primary);
+  box-shadow: 0 1px 4px color-mix(in srgb, var(--color-primary) 55%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .progress-bar {
+    transition: none;
+  }
+
+  .doc-layout.doc-fade-in {
+    animation: none;
+  }
+  .overlay-fade-enter-active,
+  .overlay-fade-leave-active {
+    transition: none;
+  }
+  .modal-fade-enter-active,
+  .modal-fade-leave-active {
+    transition: none;
+  }
+  .toast-fade-enter-active,
+  .toast-fade-leave-active {
+    transition: none;
+  }
+}
+
 .doc-article {
   flex: 1;
   min-width: 0;
@@ -669,6 +911,27 @@ body {
   font-size: 14px;
   color: var(--color-text);
   transition: all 0.15s;
+  /* 标题过长时省略号截断，不换行撑高按钮 */
+  display: inline-flex;
+  align-items: center;
+  max-width: 48%;
+  min-width: 0;
+}
+
+.nav-btn-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 外链标识：标题后的外链小图标，固定可见不被省略号裁掉 */
+.nav-btn-link {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+  margin-left: 5px;
+  color: var(--color-primary);
 }
 
 .nav-btn:hover {
@@ -742,7 +1005,8 @@ body {
     left: 0;
     bottom: 0;
     height: auto;
-    width: var(--sidebar-width);
+    /* 抽屉固定宽度，不跟随 PC 端拖拽拉伸的 --sidebar-width */
+    width: min(78vw, 260px);
     transform: translateX(-100%);
     transition: transform 0.25s ease;
     z-index: 25;
@@ -847,6 +1111,153 @@ body {
     width: 44px;
     height: 44px;
   }
+}
+
+/* 外链跳转确认弹窗：居中卡片 + 半透明遮罩，配色全走主题变量 */
+.redirect-mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 120;
+}
+
+.redirect-dialog {
+  width: min(460px, 100%);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  box-shadow: 0 14px 44px rgba(0, 0, 0, 0.18);
+  padding: 28px 26px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 12px;
+}
+
+.redirect-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.redirect-icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.redirect-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.redirect-url {
+  max-width: 100%;
+  font-size: 13px;
+  color: var(--color-primary);
+  word-break: break-all;
+  background: var(--color-hover);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  line-height: 1.5;
+}
+
+.redirect-hint {
+  font-size: 13px;
+  color: var(--color-muted);
+  margin: 0;
+}
+
+.redirect-btns {
+  display: flex;
+  gap: 12px;
+  margin-top: 6px;
+}
+
+.redirect-btn {
+  padding: 8px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  border: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, opacity 0.15s;
+}
+
+.redirect-btn:hover {
+  background: var(--color-hover);
+}
+
+.redirect-btn.ok {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+}
+
+.redirect-btn.ok:hover {
+  background: var(--color-primary);
+  opacity: 0.9;
+}
+
+/* 弹窗淡入淡出 + 卡片轻微缩放 */
+.modal-fade-enter-active,
+.modal-fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.modal-fade-enter-active .redirect-dialog,
+.modal-fade-leave-active .redirect-dialog {
+  transition: transform 0.2s ease;
+}
+
+.modal-fade-enter-from,
+.modal-fade-leave-to {
+  opacity: 0;
+}
+
+.modal-fade-enter-from .redirect-dialog,
+.modal-fade-leave-to .redirect-dialog {
+  transform: scale(0.94) translateY(8px);
+}
+
+/* 复制成功提示 toast：底部居中，深浅主题反色小条 */
+.copy-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 48px;
+  transform: translateX(-50%);
+  background: var(--color-text);
+  color: var(--color-bg);
+  font-size: 14px;
+  padding: 9px 18px;
+  border-radius: 8px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
+  z-index: 130;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.toast-fade-enter-active,
+.toast-fade-leave-active {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.toast-fade-enter-from,
+.toast-fade-leave-to {
+  opacity: 0;
+  transform: translateX(-50%) translateY(8px);
 }
 
 /* 图片灯箱 */
