@@ -4,7 +4,6 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// server/src/services -> server -> server/site.config.json
 const CONFIG_FILE = path.resolve(__dirname, '..', '..', 'site.config.json');
 
 let cached = null;

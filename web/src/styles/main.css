@@ -185,7 +185,6 @@ body {
   justify-content: center;
   align-items: center;
   gap: 4px 16px;
-  margin-top: 8px;
   font-size: 13px;
   color: #666;
 }
@@ -464,6 +463,9 @@ body {
 }
 
 .file-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   padding: 7px 20px 7px 44px;
   cursor: pointer;
   font-size: 13.5px;
@@ -481,6 +483,33 @@ body {
   border-left: 3px solid var(--color-primary);
   padding-left: 41px;
   background: var(--color-hover);
+}
+
+/* 条目文字：超长省略，给右侧外链箭头留空间 */
+.file-item-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 链接型笔记的外链箭头：静置淡灰，悬停随文字变主题色 */
+.file-item-ext {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  color: #90a4ae;
+}
+
+.file-item-ext svg {
+  width: 12px;
+  height: 12px;
+}
+
+.file-item:hover .file-item-ext,
+.file-item.active .file-item-ext {
+  color: var(--color-primary);
 }
 
 /* Doc layout */
@@ -689,9 +718,17 @@ body {
   justify-content: center;
   z-index: 100;
   cursor: zoom-out;
+  animation: lightbox-fade 0.18s ease-out;
+}
+
+/* 图片容器：负责打开时的放大淡入动画，与图片自身的缩放 transform 互不干扰 */
+.lightbox-stage {
+  line-height: 0;
+  animation: lightbox-pop 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .lightbox-img {
+  display: block;
   max-width: 90vw;
   max-height: 90vh;
   object-fit: contain;
@@ -704,6 +741,30 @@ body {
   cursor: grabbing;
 }
 
+.lightbox-close {
+  position: absolute;
+  top: 16px;
+  right: 20px;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  font-size: 26px;
+  line-height: 1;
+  cursor: pointer;
+  z-index: 1;
+  transition: background 0.15s;
+}
+
+.lightbox-close:hover {
+  background: rgba(255, 255, 255, 0.28);
+}
+
 .lightbox-hint {
   position: absolute;
   bottom: 24px;
@@ -713,4 +774,20 @@ body {
   font-size: 13px;
   pointer-events: none;
   user-select: none;
+}
+
+@keyframes lightbox-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes lightbox-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }

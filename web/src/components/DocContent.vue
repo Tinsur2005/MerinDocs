@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch, nextTick, onMounted, onBeforeUnmount } from 'vue';
+import { ref, watch, nextTick, onMounted, onUpdated, onBeforeUnmount } from 'vue';
 
 const props = defineProps({
   doc: { type: Object, default: null },
@@ -25,10 +25,13 @@ function scrollToHeading(id) {
 function openLightbox(src) {
   lightboxSrc.value = src;
   scale.value = 1;
+  // 灯箱打开期间锁定页面滚动（滚轮 / 触摸 / 键盘都滚不动背景）
+  document.body.style.overflow = 'hidden';
 }
 function closeLightbox() {
   lightboxSrc.value = '';
   scale.value = 1;
+  document.body.style.overflow = '';
 }
 function onWheel(e) {
   e.preventDefault();
@@ -128,6 +131,15 @@ watch(
   }
 );
 
+// v-html 更新会重建正文内部 DOM，清掉之前手动加的复制按钮 / 行号 / 灯箱绑定，
+// 导致代码块偶现没有增强；每次重新渲染后都补跑一遍（data-enhanced 标记保证幂等）
+onUpdated(() => {
+  nextTick(() => {
+    enhanceCodeBlocks();
+    enhanceImages();
+  });
+});
+
 onMounted(() => {
   window.addEventListener('scroll', updateActive, { passive: true });
   window.addEventListener('keydown', onKey);
@@ -135,6 +147,8 @@ onMounted(() => {
 onBeforeUnmount(() => {
   window.removeEventListener('scroll', updateActive);
   window.removeEventListener('keydown', onKey);
+  // 组件卸载时若有灯箱残留，恢复页面滚动
+  document.body.style.overflow = '';
 });
 </script>
 
@@ -171,17 +185,19 @@ onBeforeUnmount(() => {
   <div v-else-if="loading" class="doc-placeholder">加载中...</div>
   <div v-else class="doc-placeholder">请从左侧选择一篇文档</div>
 
-  <!-- 图片灯箱 -->
+  <!-- 图片灯箱：@wheel.prevent 拦截整个蒙层的滚轮，保证背景页面不被滑动 -->
   <teleport to="body">
-    <div v-if="lightboxSrc" class="lightbox-overlay" @click="closeLightbox">
-      <img
-        :src="lightboxSrc"
-        class="lightbox-img"
-        :style="{ transform: `scale(${scale})` }"
-        alt="预览"
-        @click.stop
-        @wheel.prevent="onWheel"
-      />
+    <div v-if="lightboxSrc" class="lightbox-overlay" @click="closeLightbox" @wheel.prevent>
+      <div class="lightbox-stage" @click.stop>
+        <img
+          :src="lightboxSrc"
+          class="lightbox-img"
+          :style="{ transform: `scale(${scale})` }"
+          alt="预览"
+          @wheel="onWheel"
+        />
+      </div>
+      <button class="lightbox-close" title="关闭" aria-label="关闭" @click.stop="closeLightbox">×</button>
       <div class="lightbox-hint">滚轮缩放 · 点击空白关闭</div>
     </div>
   </teleport>

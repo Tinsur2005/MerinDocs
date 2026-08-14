@@ -21,10 +21,9 @@ const dropRef = ref(null);
 
 function measure() {
   if (!headerRef.value || !brandRef.value || !probeRef.value) return;
-  // 移动端菜单按钮（桌面隐藏时 offsetWidth 为 0）+ 右间距 12
   const mb = menuBtnRef.value;
   const menuW = mb && mb.offsetWidth > 0 ? mb.offsetWidth + 12 : 0;
-  const padding = 48; // 左右 padding 24*2
+  const padding = 48;
   // 探针始终渲染两个按钮，无论当前是否折叠，宽度都代表「完整展开」所需
   const need = brandRef.value.offsetWidth + probeRef.value.offsetWidth + menuW + padding;
   compact.value = need > headerRef.value.clientWidth;

@@ -17,22 +17,25 @@ async function load(path) {
   const hit = getCachedDoc(path);
   if (hit) {
     doc.value = hit;
-    // 打开笔记后，浏览器标签页标题改为当前笔记标题
-    document.title = hit.title || siteConfig.value.siteTitle;
+    setDocTitle(hit.title);
     return;
   }
   loading.value = true;
   try {
     doc.value = await getDoc(path);
-    // 打开笔记后，浏览器标签页标题改为当前笔记标题
-    document.title = doc.value.title || siteConfig.value.siteTitle;
+    setDocTitle(doc.value.title);
   } catch (e) {
     console.error('加载文档失败', e);
     doc.value = null;
-    document.title = '404 - MerinDocs';
+    document.title = `404 - ${siteConfig.value.navbar.title}`;
   } finally {
     loading.value = false;
   }
+}
+
+// 文档页浏览器标题 = 笔记标题 + " - " + 导航栏标题（来自 site.config.json 的 navbar.title）
+function setDocTitle(title) {
+  document.title = title ? `${title} - ${siteConfig.value.navbar.title}` : siteConfig.value.siteTitle;
 }
 
 watch(
