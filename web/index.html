@@ -4,6 +4,15 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>MerinDocs - 记录学习过程的个人知识库</title>
+    <script>
+      // 首帧渲染前应用夜间主题，避免夜间模式用户刷新时先闪一下白屏
+      try {
+        var t = localStorage.getItem('merindocs-theme');
+        if (t === 'dark' || (!t && matchMedia('(prefers-color-scheme: dark)').matches)) {
+          document.documentElement.dataset.theme = 'dark';
+        }
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="app"></div>

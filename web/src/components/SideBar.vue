@@ -6,6 +6,7 @@ const props = defineProps({
   tree: { type: Array, default: () => [] },
   current: { type: String, default: '' },
   open: { type: Boolean, default: false },
+  navCollapsed: { type: Boolean, default: false },
 });
 const emit = defineEmits(['select']);
 
@@ -105,7 +106,7 @@ function isActive(filePath) {
 </script>
 
 <template>
-  <aside class="sidebar" :class="{ open }">
+  <aside class="sidebar" :class="{ open, collapsed: navCollapsed }">
     <!-- 全局搜索框 -->
     <div class="sidebar-search">
       <div class="search-input-wrap">
@@ -161,36 +162,39 @@ function isActive(filePath) {
         <span class="cat-name">{{ cat.name }}</span>
         <span class="cat-count">{{ cat.files.length }}</span>
       </div>
-      <ul v-show="!collapsed[cat.name]" class="file-list">
-        <li
-          v-for="f in cat.files"
-          :key="f.path"
-          class="file-item"
-          :class="{ active: isActive(f.path) }"
-          @click="emit('select', f)"
-        >
-          <span class="file-item-name">{{ f.name }}</span>
-          <span
-            v-if="f.redirect"
-            class="file-item-ext"
-            title="外链，点击直接跳转"
+      <!-- 展开/收起：grid-template-rows 0fr→1fr 过渡，内容按自身高度丝滑展开 -->
+      <div class="cat-body" :class="{ open: !collapsed[cat.name] }">
+        <ul class="file-list">
+          <li
+            v-for="f in cat.files"
+            :key="f.path"
+            class="file-item"
+            :class="{ active: isActive(f.path) }"
+            @click="emit('select', f)"
           >
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true"
+            <span class="file-item-name">{{ f.name }}</span>
+            <span
+              v-if="f.redirect"
+              class="file-item-ext"
+              title="外链，点击直接跳转"
             >
-              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
-              <polyline points="15 3 21 3 21 9"></polyline>
-              <line x1="10" y1="14" x2="21" y2="3"></line>
-            </svg>
-          </span>
-        </li>
-      </ul>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                <polyline points="15 3 21 3 21 9"></polyline>
+                <line x1="10" y1="14" x2="21" y2="3"></line>
+              </svg>
+            </span>
+          </li>
+        </ul>
+      </div>
     </div>
   </aside>
 </template>

@@ -13,7 +13,7 @@ const year = new Date().getFullYear();
         :href="siteConfig.footer.copyrightUrl || '#'"
         target="_blank"
         rel="noopener"
-        style="color:#666;text-decoration:none;"
+        style="color:var(--color-text-secondary);text-decoration:none;"
       >{{ siteConfig.footer.copyrightText }}</a>
       All rights reserved
       <br />
