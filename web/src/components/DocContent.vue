@@ -1,5 +1,7 @@
 <script setup>
-import { ref, watch, nextTick, onMounted, onUpdated, onBeforeUnmount } from 'vue';
+import { ref, computed, watch, nextTick, onMounted, onUpdated, onBeforeUnmount } from 'vue';
+import TocNode from './TocNode.vue';
+import { showToast } from '../toast';
 
 const props = defineProps({
   doc: { type: Object, default: null },
@@ -8,18 +10,82 @@ const emit = defineEmits(['navigate']);
 
 const activeId = ref('');
 
+// ---- 目录树：把扁平 toc 按标题层级挂成树，支持逐级展开/收起 ----
+// 折叠状态：记录被收起的节点 id（Set）；点击箭头切换，滚动到某节时自动展开其祖先链
+const collapsed = ref(new Set());
+const tocTree = computed(() => buildTocTree(props.doc?.toc || []));
+
+// 扁平目录 → 树：用栈维护当前层级，同级/更浅级标题弹出栈，子项挂到父标题下
+function buildTocTree(items) {
+  const root = [];
+  const stack = [{ level: 0, children: root }];
+  for (const item of items) {
+    const node = { ...item, children: [] };
+    while (stack.length > 1 && stack[stack.length - 1].level >= node.level) stack.pop();
+    stack[stack.length - 1].children.push(node);
+    stack.push({ level: node.level, children: node.children });
+  }
+  return root;
+}
+
+// 默认折叠规则：1~2 级展开；3 级及以上默认收起（仅对确有子项的标题生效）
+function seedCollapsed(items) {
+  const s = new Set();
+  for (let i = 0; i < items.length; i++) {
+    const it = items[i];
+    if (it.level < 3) continue;
+    let hasChild = false;
+    for (let j = i + 1; j < items.length; j++) {
+      if (items[j].level <= it.level) break;
+      hasChild = true;
+    }
+    if (hasChild) s.add(it.id);
+  }
+  return s;
+}
+
+// 向上查找某标题的全部祖先 id（从最近父级到根）
+function ancestorIds(id) {
+  const items = props.doc?.toc || [];
+  const idx = items.findIndex((it) => it.id === id);
+  if (idx < 0) return [];
+  const result = [];
+  let cur = idx;
+  while (cur > 0) {
+    let p = -1;
+    for (let i = cur - 1; i >= 0; i--) {
+      if (items[i].level < items[cur].level) {
+        p = i;
+        break;
+      }
+    }
+    if (p < 0) break;
+    result.push(items[p].id);
+    cur = p;
+  }
+  return result;
+}
+
+function onToggleToc(id) {
+  const s = new Set(collapsed.value);
+  if (s.has(id)) s.delete(id);
+  else s.add(id);
+  collapsed.value = s;
+}
+
+// 滚动到某节（activeId 变化）：目录跟随阅读位置——先重置为默认状态
+// （1~2 级展开、3 级及以上收起），再展开当前所在节的祖先链；
+// 滑出该节后自动收回默认，实现"滑到展开、滑出收起"
+watch(activeId, (id) => {
+  if (!id) return;
+  const s = seedCollapsed(props.doc?.toc || []);
+  for (const pid of [id, ...ancestorIds(id)]) s.delete(pid);
+  collapsed.value = s;
+});
+
 // 灯箱状态
 const lightboxSrc = ref('');
 const scale = ref(1);
-
-// 复制成功提示（底部 toast，1.8s 自动消失）
-const toast = ref('');
-let toastTimer = 0;
-function showToast(msg) {
-  toast.value = msg;
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => (toast.value = ''), 1800);
-}
 
 function scrollToHeading(id) {
   const el = document.getElementById(id);
@@ -130,7 +196,15 @@ function updateActive() {
 
 watch(
   () => props.doc,
-  () => {
+  (d) => {
+    // 新文档：重置目录折叠状态（1~2 级展开、3 级及以上收起），并展开首个标题链
+    collapsed.value = seedCollapsed(d?.toc || []);
+    const first = d?.toc?.[0];
+    if (first) {
+      const s = new Set(collapsed.value);
+      s.delete(first.id);
+      collapsed.value = s;
+    }
     nextTick(() => {
       enhanceCodeBlocks();
       enhanceImages();
@@ -172,7 +246,6 @@ onBeforeUnmount(() => {
   window.removeEventListener('keydown', onKey);
   // 组件卸载时若有灯箱残留，恢复页面滚动
   document.body.style.overflow = '';
-  clearTimeout(toastTimer);
 });
 </script>
 
@@ -226,26 +299,16 @@ onBeforeUnmount(() => {
     </article>
     <aside v-if="doc.toc && doc.toc.length" class="doc-toc">
       <div class="toc-title">本页目录</div>
-      <ul class="toc-list">
-        <li
-          v-for="item in doc.toc"
-          :key="item.id"
-          :class="['toc-item', 'toc-level-' + item.level, { active: activeId === item.id }]"
-          @click="scrollToHeading(item.id)"
-        >
-          {{ item.text }}
-        </li>
-      </ul>
+      <TocNode
+        :nodes="tocTree"
+        :active-id="activeId"
+        :collapsed="collapsed"
+        @toggle="onToggleToc"
+        @scroll="scrollToHeading"
+      />
     </aside>
   </div>
   <div v-else class="doc-placeholder">请从左侧选择一篇文档</div>
-
-  <!-- 复制成功提示：底部居中消息条 -->
-  <teleport to="body">
-    <Transition name="toast-fade">
-      <div v-if="toast" class="copy-toast">{{ toast }}</div>
-    </Transition>
-  </teleport>
 
   <!-- 图片灯箱：@wheel.prevent 拦截整个蒙层的滚轮，保证背景页面不被滑动 -->
   <teleport to="body">

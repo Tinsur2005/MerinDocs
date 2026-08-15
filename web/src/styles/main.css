@@ -12,13 +12,19 @@
   --color-muted: #999;
   --color-primary: #349e70;
   --color-border: #eaecef;
-  --color-sidebar-bg: #f8f9fa;
-  --color-hover: #ecf5f0;
-  --color-tag-bg: #e3e6e8;
-  --color-header-bg: #349e70;
+  --color-sidebar-bg: #ffffff;
+  --color-hover: #eef1f4;
+  --color-tag-bg: #e9edf1;
+  --color-header-bg: #ffffff;
+  --color-header-text: #2c3e50;
   /* 滚动条配色：浅色模式用中性浅灰 */
   --color-scrollbar-thumb: #cdd3d9;
   --color-scrollbar-thumb-hover: #b1b9c2;
+  /* 画布底色 + 层级阴影：纯白模块浮在浅灰画布上，形成前后层次 */
+  --color-page-bg: #f6f8fa;
+  --color-shadow-sm: 0 1px 3px rgba(16, 24, 40, 0.06);
+  --color-shadow-lg: 0 8px 24px rgba(16, 24, 40, 0.05);
+  --color-shadow-edge: 1px 0 8px rgba(16, 24, 40, 0.04);
   /* 代码块外壳：浅色模式用 GitHub Light 同族色 */
   --color-code-bg: #f6f8fa;
   --color-code-border: #d0d7de;
@@ -59,9 +65,15 @@
   --color-hover: #232323;
   --color-tag-bg: #2a2a2a;
   --color-header-bg: #1f1f1f;
+  --color-header-text: #ffffff;
   /* 滚动条配色：深色模式用中性深灰 */
   --color-scrollbar-thumb: #3d3d3d;
   --color-scrollbar-thumb-hover: #505050;
+  /* 深色画布比卡片面略深一档，卡片从背景中浮起 */
+  --color-page-bg: #161616;
+  --color-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --color-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.45);
+  --color-shadow-edge: 1px 0 8px rgba(0, 0, 0, 0.35);
   /* 夜间强调色：不用浅色模式的绿色，换成更亮的天蓝，整站统一 */
   --color-primary: #5ab0ff;
   /* 代码块外壳：深色模式沿用 GitHub Dark 同族色 */
@@ -100,7 +112,7 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
     'Helvetica Neue', Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif;
   color: var(--color-text);
-  background: var(--color-bg);
+  background: var(--color-page-bg);
   font-size: 15px;
   line-height: 1.6;
   overflow-x: hidden; /* 兜底：禁止页面整体横向滚动 */
@@ -139,17 +151,21 @@ body {
 
 .app {
   min-height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Header */
 .header {
   height: var(--header-height);
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   padding: 0 24px;
   background: var(--color-header-bg);
-  color: #fff;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+  color: var(--color-header-text);
+  border-bottom: 1px solid var(--color-border);
+  box-shadow: var(--color-shadow-sm);
   position: sticky;
   top: 0;
   z-index: 30;
@@ -183,11 +199,11 @@ body {
 }
 
 .header-link {
-  color: #fff;
+  color: var(--color-header-text);
   text-decoration: none;
   font-size: 14px;
   opacity: 0.9;
-  transition: opacity 0.15s;
+  transition: opacity 0.15s, color 0.15s;
   background: none;
   border: none;
   padding: 0;
@@ -197,6 +213,7 @@ body {
 
 .header-link:hover {
   opacity: 1;
+  color: var(--color-primary);
   text-decoration: underline;
 }
 
@@ -221,14 +238,15 @@ body {
   padding: 0;
   font: inherit;
   font-size: 14px;
-  color: #fff;
+  color: var(--color-header-text);
   opacity: 0.9;
   cursor: pointer;
-  transition: opacity 0.15s;
+  transition: opacity 0.15s, color 0.15s;
 }
 
 .header-drop-btn:hover {
   opacity: 1;
+  color: var(--color-primary);
   text-decoration: underline;
 }
 
@@ -261,9 +279,11 @@ body {
   color: var(--color-primary);
 }
 
-/* Footer */
+/* Footer：负外边距抵消 .app-main 的水平内边距，
+   使页脚通栏铺满正文区（侧栏右边至页面右缘），不延伸到侧栏下方；
+   margin-top:auto 吸收剩余高度，内容再短页脚也贴住页面底部 */
 .app-footer {
-  margin-top: 48px;
+  margin: auto -40px 0;
   border-top: 1px solid var(--color-border);
   background: var(--color-bg);
   padding: 20px 0 32px;
@@ -331,14 +351,17 @@ body {
   display: block;
   width: 20px;
   height: 2px;
-  background: #fff;
+  background: var(--color-text);
   margin: 0 auto;
 }
 
 /* Body layout */
 .app-body {
+  flex: 1;
   display: flex;
-  align-items: flex-start;
+  /* stretch 而非 flex-start：让 .app-main 纵向撑满视口，页脚才能沉底 */
+  align-items: stretch;
+  min-width: 0; /* 窄屏下允许收缩，避免被内容最小宽度撑出视口 */
 }
 
 .app-main {
@@ -346,6 +369,10 @@ body {
   min-width: 0; /* 关键：防止内容撑开导致横向滚动 */
   padding: 32px 40px 0;
   position: relative; /* 作为加载遮罩的定位基准（只覆盖正文区域） */
+  /* 纵向 flex：内容与页脚固定留白，页脚用 margin-top:auto 沉到页面底部 */
+  display: flex;
+  flex-direction: column;
+  gap: 48px;
 }
 
 /* Sidebar */
@@ -353,6 +380,7 @@ body {
   width: var(--sidebar-width);
   background: var(--color-sidebar-bg);
   border-right: 1px solid var(--color-border);
+  box-shadow: var(--color-shadow-edge);
   padding: 16px 0;
   flex-shrink: 0;
   position: sticky;
@@ -465,7 +493,7 @@ body {
 
 .search-input-wrap input:focus {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(62, 175, 124, 0.12);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 14%, transparent);
 }
 
 /* 夜间模式：焦点光晕跟随天蓝强调色 */
@@ -709,8 +737,12 @@ body {
   display: flex;
   gap: 40px;
   align-items: flex-start;
+  /* width:100% 必须保留：margin: 0 auto 会让纵向 flex 容器里的子项
+     放弃拉伸、按内容定宽，窄屏下被内容撑到 max-width 而溢出视口 */
+  width: 100%;
   max-width: 1180px;
   margin: 0 auto;
+  min-width: 0;
 }
 
 /* 文章加载中：转圈 spinner 居中显示（Home 首页独立加载用） */
@@ -795,21 +827,15 @@ body {
   }
 }
 
-/* 加载进度条：固定贴页面最顶端。
-   浅色模式顶栏为绿色，进度条用白色才清晰（与顶栏白字一致）；深色模式用主题天蓝 */
+/* 加载进度条：固定贴页面最顶端，颜色随主题（浅色绿 / 深色天蓝） */
 .progress-bar {
   position: fixed;
   top: 0;
   left: 0;
   height: 3px;
   z-index: 60;
-  background: #fff;
-  transition: width 0.2s ease;
-  box-shadow: 0 1px 4px rgba(255, 255, 255, 0.55);
-}
-
-:root[data-theme='dark'] .progress-bar {
   background: var(--color-primary);
+  transition: width 0.2s ease;
   box-shadow: 0 1px 4px color-mix(in srgb, var(--color-primary) 55%, transparent);
 }
 
@@ -829,8 +855,13 @@ body {
   .modal-fade-leave-active {
     transition: none;
   }
-  .toast-fade-enter-active,
-  .toast-fade-leave-active {
+  .toast-enter-active,
+  .toast-leave-active,
+  .toast-move {
+    transition: none;
+  }
+  .toc-children,
+  .toc-arrow {
     transition: none;
   }
 }
@@ -838,7 +869,14 @@ body {
 .doc-article {
   flex: 1;
   min-width: 0;
-  overflow: hidden; /* 防止内部内容溢出到 TOC 区域 */
+  max-width: 100%; /* 窄屏下卡片不超出视口 */
+  overflow: hidden; /* 桌面端：防止内部内容溢出到 TOC 区域 */
+  /* 正文白卡片：在浅灰画布上浮起，与侧栏/TOC 同一层级，告别扁平 */
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  box-shadow: var(--color-shadow-sm), var(--color-shadow-lg);
+  padding: 32px 36px 36px;
 }
 
 .doc-title {
@@ -950,8 +988,10 @@ body {
   font-size: 13px;
   background: var(--color-bg); /* 白底，避免正文图片透上来 */
   z-index: 5;
-  border-radius: 8px;
+  border-radius: 12px;
   border: 1px solid var(--color-border);
+  box-shadow: var(--color-shadow-sm), var(--color-shadow-lg);
+  padding-bottom: 10px; /* 最后一条目录项与卡片底边保持间距 */
 }
 
 .toc-title {
@@ -962,35 +1002,122 @@ body {
   padding: 12px 12px 0;
 }
 
+/* 目录树列表：嵌套层级用行内 padding 区分 */
 .toc-list {
   list-style: none;
+  padding: 0;
+  margin: 0;
 }
 
-.toc-item {
+.toc-node {
+  margin: 0;
+}
+
+/* 标题行：整行可点击跳转，左侧高亮条随当前阅读位置 */
+.toc-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
   padding: 5px 12px;
   cursor: pointer;
   color: var(--color-text-secondary);
   border-left: 2px solid transparent;
   line-height: 1.5;
-  transition: all 0.15s;
+  transition: color 0.15s;
 }
 
-.toc-item:hover {
+/* 标题文字：过长时用省略号截断，不折行（flex 子项需 min-width:0 才能收缩） */
+.toc-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.toc-row:hover {
   color: var(--color-primary);
 }
 
-.toc-item.active {
+.toc-row.active {
   color: var(--color-primary);
   border-left-color: var(--color-primary);
   font-weight: 600;
 }
 
-.toc-level-3 {
-  padding-left: 24px;
+/* 层级缩进：逐级加深（每级 16px），一眼区分级别高低 */
+.toc-level-1 .toc-row {
+  padding-left: 12px;
 }
 
-.toc-level-4 {
-  padding-left: 36px;
+.toc-level-2 .toc-row {
+  padding-left: 28px;
+}
+
+.toc-level-3 .toc-row {
+  padding-left: 44px;
+}
+
+.toc-level-4 .toc-row {
+  padding-left: 60px;
+}
+
+.toc-level-5 .toc-row {
+  padding-left: 76px;
+}
+
+.toc-level-6 .toc-row {
+  padding-left: 92px;
+}
+
+/* 折叠箭头：有子项的标题才显示；收起时向右转 90° */
+.toc-arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  color: var(--color-muted);
+  transition: transform 0.2s;
+}
+
+.toc-arrow svg {
+  display: block;
+  width: 9px;
+  height: 9px;
+  fill: currentColor;
+}
+
+.toc-arrow.collapsed {
+  transform: rotate(-90deg);
+}
+
+/* 无子项标题的占位：与箭头同宽，保证同级文字对齐 */
+.toc-arrow-ghost {
+  width: 14px;
+  flex-shrink: 0;
+}
+
+/* 子树展开/收起：grid 行高 0fr→1fr 过渡，按内容自身高度丝滑展开 */
+.toc-children {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.toc-children.open {
+  grid-template-rows: 1fr;
+}
+
+/* 子列表 min-height:0 + overflow:hidden，行高才能真正塌缩到 0 */
+.toc-children > ul {
+  min-height: 0;
+  overflow: hidden;
 }
 
 /* 移动端 */
@@ -1044,6 +1171,18 @@ body {
 
   .doc-layout {
     gap: 0;
+    min-width: 0;
+  }
+
+  /* 窄屏：正文卡片内边距收窄 */
+  .doc-article {
+    padding: 24px 18px 28px;
+  }
+
+  /* 移动端：页脚负外边距跟随 .app-main 的 16px 内边距，仍通栏铺满 */
+  .app-footer {
+    margin-left: -16px;
+    margin-right: -16px;
   }
 
   .doc-toc {
@@ -1232,32 +1371,55 @@ body {
   transform: scale(0.94) translateY(8px);
 }
 
-/* 复制成功提示 toast：底部居中，深浅主题反色小条 */
-.copy-toast {
+/* 顶部通知堆栈：消息从上弹出、依次向下顺延，最多同显 3 条，
+   超出时最旧一条被向下顶出并消失，其余条目平滑上移补位 */
+.toast-stack {
   position: fixed;
+  top: calc(var(--header-height) + 12px);
   left: 50%;
-  bottom: 48px;
   transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 130;
+  pointer-events: none;
+}
+
+.toast-item {
   background: var(--color-text);
   color: var(--color-bg);
   font-size: 14px;
   padding: 9px 18px;
   border-radius: 8px;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
-  z-index: 130;
-  pointer-events: none;
   white-space: nowrap;
 }
 
-.toast-fade-enter-active,
-.toast-fade-leave-active {
-  transition: opacity 0.2s ease, transform 0.2s ease;
+.toast-item + .toast-item {
+  margin-top: 8px;
 }
 
-.toast-fade-enter-from,
-.toast-fade-leave-to {
+.toast-enter-active {
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.toast-leave-active {
+  /* 不脱离文档流：被移除的总是栈底条目，留在流内让"向下移动+渐隐"连贯播放 */
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.toast-move {
+  transition: transform 0.25s ease;
+}
+
+.toast-enter-from {
   opacity: 0;
-  transform: translateX(-50%) translateY(8px);
+  transform: translateY(-10px); /* 从上方弹出滑入 */
+}
+
+.toast-leave-to {
+  opacity: 0;
+  transform: translateY(12px); /* 被向下顶出 */
 }
 
 /* 图片灯箱 */

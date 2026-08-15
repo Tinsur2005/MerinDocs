@@ -30,6 +30,14 @@ async function load(path) {
     const hit = getCachedDoc(path);
     const data = hit || (await getDoc(path));
     if (seq !== loadSeq) return;
+    // 新视图首次挂载且命中缓存（如跨视图预加载后跳转）：直接显示，
+    // 不等待最短时长，避免旧视图已卸载、这里却还在转圈的"空白+遮罩"空档
+    if (hit && !doc.value) {
+      doc.value = data;
+      setDocTitle(data.title);
+      loading.value = false;
+      return;
+    }
     await minDelay;
     if (seq !== loadSeq) return;
     // 新文档就绪：同帧切换内容并关闭遮罩，形成“遮罩淡出 + 新内容渐显”的过渡

@@ -5,12 +5,15 @@ import SideBar from './components/SideBar.vue';
 import DocHeader from './components/DocHeader.vue';
 import AppFooter from './components/AppFooter.vue';
 import ThemeToggle from './components/ThemeToggle.vue';
+import ToastStack from './components/ToastStack.vue';
 import RedirectConfirm from './components/RedirectConfirm.vue';
-import { getTree } from './api';
+import { getTree, getDoc } from './api';
 import { loadSiteConfig } from './siteConfig';
 
 const tree = ref([]);
 const sidebarOpen = ref(false);
+// 跨视图切换（首页→文档）的全局加载遮罩：预加载期间旧页面在其下保持可见
+const pageLoading = ref(false);
 // 导航栏整体收起/展开（仅 PC 端）：默认展开，切换只影响本次会话，不做持久化
 const navCollapsed = ref(false);
 const router = useRouter();
@@ -86,13 +89,28 @@ onMounted(async () => {
 const redirectUrl = ref('');
 const showRedirect = ref(false);
 
-function goTo(file) {
+async function goTo(file) {
   // 链接型笔记：弹窗确认后再新标签页跳转，不打开 md
   if (file.redirect) {
     redirectUrl.value = file.redirect;
     showRedirect.value = true;
     return;
   }
+  // 跨视图切换（当前不在文档页，如从首页点入）：先预加载目标文档再跳转，
+  // 旧页面在遮罩下保持可见，避免 HomeView 卸载后新视图还在加载、只剩空白+页脚的空档
+  if (route.name !== 'doc') {
+    pageLoading.value = true;
+    try {
+      await getDoc(file.path);
+    } catch (e) {
+      // 预加载失败也照常跳转，由文档页显示 404
+    }
+    await router.push({ name: 'doc', params: { docPath: file.path } });
+    sidebarOpen.value = false;
+    pageLoading.value = false;
+    return;
+  }
+  // 文档→文档：同组件切换，由 DocView 自己管理遮罩（旧文档保留可见）
   router.push({ name: 'doc', params: { docPath: file.path } });
   sidebarOpen.value = false;
 }
@@ -151,6 +169,15 @@ function onRedirectConfirm() {
         </svg>
       </button>
       <main class="app-main">
+        <!-- 跨视图切换的全局加载遮罩：与文档页内遮罩同款样式，覆盖整个正文区域 -->
+        <Transition name="overlay-fade">
+          <div v-if="pageLoading" class="doc-loading-overlay">
+            <div class="doc-loading-center">
+              <div class="spinner" aria-hidden="true"></div>
+              <p>加载中…</p>
+            </div>
+          </div>
+        </Transition>
         <RouterView />
         <AppFooter />
       </main>
@@ -158,6 +185,8 @@ function onRedirectConfirm() {
   </div>
   <!-- 夜间/日间切换：全局悬浮按钮，fixed 定位不参与布局 -->
   <ThemeToggle />
+  <!-- 顶部通知堆栈：全站消息统一在此展示 -->
+  <ToastStack />
   <!-- 外链跳转确认弹窗 -->
   <RedirectConfirm v-model="showRedirect" :url="redirectUrl" @confirm="onRedirectConfirm" />
 </template>

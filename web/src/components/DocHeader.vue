@@ -1,12 +1,25 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue';
+import { useRoute } from 'vue-router';
 import { siteConfig } from '../siteConfig';
+import { showToast } from '../toast';
 
 defineEmits(['toggle-sidebar']);
+
+const route = useRoute();
 
 // 导航按钮的 url 以 / 开头视为站内路由（router-link），否则为外链（<a>）
 function isInternal(url) {
   return typeof url === 'string' && url.startsWith('/');
+}
+
+// 已在文档首页时点击「文档首页」按钮：拦截跳转并弹提示
+function onNavClick(b, e) {
+  if (!isInternal(b.url)) return;
+  if (route.name === 'home' && route.path === b.url) {
+    e.preventDefault();
+    showToast('已经在首页啦！');
+  }
 }
 
 // 品牌区 + 两个按钮放不下一整行时，把「返回博客 / 文档首页」折叠成「更多」下拉
@@ -57,7 +70,12 @@ onBeforeUnmount(() => {
       <!-- 空间足够：按钮平铺 -->
       <template v-if="!compact">
         <template v-for="b in siteConfig.navbar.buttons" :key="b.text">
-          <router-link v-if="isInternal(b.url)" class="header-link" :to="b.url">{{ b.text }}</router-link>
+          <router-link
+            v-if="isInternal(b.url)"
+            class="header-link"
+            :to="b.url"
+            @click="onNavClick(b, $event)"
+          >{{ b.text }}</router-link>
           <a v-else class="header-link" :href="b.url" :target="b.target || '_blank'" rel="noopener">{{ b.text }}</a>
         </template>
       </template>
@@ -68,7 +86,12 @@ onBeforeUnmount(() => {
         </button>
         <div v-if="dropOpen" class="header-drop-menu">
           <template v-for="b in siteConfig.navbar.buttons" :key="b.text">
-            <router-link v-if="isInternal(b.url)" class="header-drop-item" :to="b.url" @click="dropOpen = false">{{ b.text }}</router-link>
+            <router-link
+              v-if="isInternal(b.url)"
+              class="header-drop-item"
+              :to="b.url"
+              @click="dropOpen = false; onNavClick(b, $event)"
+            >{{ b.text }}</router-link>
             <a
               v-else
               class="header-drop-item"
