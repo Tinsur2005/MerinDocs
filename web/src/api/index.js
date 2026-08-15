@@ -16,7 +16,16 @@ export const getDoc = (docPath) => {
   });
 };
 
-export const getHome = () => http.get('/api/home').then((r) => r.data);
+// 首页内容会话缓存：与文档缓存同理，跨视图切回首页时命中即秒开（刷新页面会清空）
+let homeCache = null;
+export const getCachedHome = () => homeCache;
+export const getHome = () => {
+  if (homeCache) return Promise.resolve(homeCache);
+  return http.get('/api/home').then((r) => {
+    homeCache = r.data;
+    return r.data;
+  });
+};
 
 export const searchNotes = (q) =>
   http.get('/api/search', { params: { q } }).then((r) => r.data);

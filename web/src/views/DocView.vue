@@ -7,6 +7,7 @@ import RedirectConfirm from '../components/RedirectConfirm.vue';
 import NotFoundView from './NotFoundView.vue';
 import { getDoc, getCachedDoc } from '../api';
 import { siteConfig } from '../siteConfig';
+import { hideViewLoading } from '../loading';
 
 const route = useRoute();
 const router = useRouter();
@@ -49,7 +50,11 @@ async function load(path) {
     doc.value = null;
     document.title = `404 - ${siteConfig.value.navbar.title}`;
   } finally {
-    if (seq === loadSeq) loading.value = false;
+    if (seq === loadSeq) {
+      loading.value = false;
+      // 内容已就绪（或 404）：收起跨视图切换的全局遮罩
+      hideViewLoading();
+    }
   }
 }
 

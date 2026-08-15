@@ -1,3 +1,11 @@
+<script setup>
+import { onMounted } from 'vue';
+import { hideViewLoading } from '../loading';
+
+// 404 页无需加载：挂载即收起跨视图切换的全局遮罩
+onMounted(hideViewLoading);
+</script>
+
 <template>
   <div class="not-found">
     <div class="not-found-code">404</div>
