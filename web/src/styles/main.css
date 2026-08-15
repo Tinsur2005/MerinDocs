@@ -686,7 +686,8 @@ body {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 7px 20px 7px 44px;
+  /* 缩进随嵌套深度由 --file-indent 控制（SideBarNode 内联设置），默认 44px 对应顶层文档 */
+  padding: 7px 20px 7px var(--file-indent, 44px);
   cursor: pointer;
   font-size: 13.5px;
   color: var(--color-text);
@@ -701,7 +702,7 @@ body {
   color: var(--color-primary);
   font-weight: 600;
   border-left: 3px solid var(--color-primary);
-  padding-left: 41px;
+  padding-left: calc(var(--file-indent, 44px) - 3px);
   background: var(--color-hover);
 }
 

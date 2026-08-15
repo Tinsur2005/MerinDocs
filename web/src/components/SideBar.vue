@@ -1,6 +1,7 @@
 <script setup>
 import { ref, watch } from 'vue';
 import { searchNotes } from '../api';
+import SideBarNode from './SideBarNode.vue';
 
 const props = defineProps({
   tree: { type: Array, default: () => [] },
@@ -10,6 +11,7 @@ const props = defineProps({
 });
 const emit = defineEmits(['select']);
 
+// 折叠状态：key = 节点路径（嵌套后文件夹名可能重名，不能用 name 做 key）
 const collapsed = ref({});
 
 // ---- 全局搜索：防抖输入 -> 请求 /api/search -> 下拉展示命中结果 ----
@@ -64,44 +66,58 @@ function highlight(text) {
   return text.replace(re, '<mark>$1</mark>');
 }
 
-function findCat(path) {
-  return props.tree.find((cat) => cat.files.some((f) => f.path === path));
+// 某文档路径的所有祖先文件夹路径：note/A/B/x.md -> ["A", "A/B"]
+function ancestorPaths(filePath) {
+  const segs = filePath.split('/');
+  const paths = [];
+  let cur = '';
+  for (let i = 0; i < segs.length - 1; i++) {
+    cur = cur ? `${cur}/${segs[i]}` : segs[i];
+    paths.push(cur);
+  }
+  return paths;
 }
 
-// 目录加载完成后：默认全部折叠（只给尚无状态的新分类播种，保留用户手动开合）；
-// 若当前正打开某篇文档，展开其所属文件夹
+// 目录加载完成后：默认全部折叠（只给尚无状态的文件夹播种，保留用户手动开合）；
+// 若当前正打开某篇文档，展开其所有祖先文件夹
 watch(
   () => props.tree,
   (tree) => {
     const state = { ...collapsed.value };
-    for (const cat of tree) {
-      if (state[cat.name] === undefined) state[cat.name] = true;
-    }
-    if (props.current) {
-      const cat = findCat(props.current);
-      if (cat) state[cat.name] = false;
-    }
+    const set = new Set(ancestorPaths(props.current || ''));
+    const seed = (nodes) => {
+      for (const n of nodes) {
+        if (n.type !== 'dir') continue;
+        if (state[n.path] === undefined) state[n.path] = true;
+        if (set.has(n.path)) state[n.path] = false;
+        if (n.children) seed(n.children);
+      }
+    };
+    seed(tree);
     collapsed.value = state;
   },
   { immediate: true }
 );
 
-// 切换文档时：自动展开所属文件夹，其它文件夹保持用户手动状态
+// 切换文档时：自动展开所属的所有祖先文件夹，其它文件夹保持用户手动状态
 watch(
   () => props.current,
   (path) => {
     if (!path) return;
-    const cat = findCat(path);
-    if (cat) collapsed.value[cat.name] = false;
+    const set = new Set(ancestorPaths(path));
+    const expand = (nodes) => {
+      for (const n of nodes) {
+        if (n.type !== 'dir') continue;
+        if (set.has(n.path)) collapsed.value[n.path] = false;
+        if (n.children) expand(n.children);
+      }
+    };
+    expand(props.tree);
   }
 );
 
-function toggle(name) {
-  collapsed.value[name] = !collapsed.value[name];
-}
-
-function isActive(filePath) {
-  return props.current === filePath;
+function toggle(path) {
+  collapsed.value[path] = !collapsed.value[path];
 }
 </script>
 
@@ -153,48 +169,20 @@ function isActive(filePath) {
       </div>
     </div>
 
-    <div v-if="!tree.length" class="sidebar-empty">加载中...</div>
-    <div v-for="cat in tree" :key="cat.name" class="cat">
-      <div class="cat-title" @click="toggle(cat.name)">
-        <span class="cat-arrow" :class="{ collapsed: collapsed[cat.name] }">
-          <svg viewBox="0 0 10 10" aria-hidden="true"><path d="M2 3 L5 7 L8 3 Z" fill="currentColor"></path></svg>
-        </span>
-        <span class="cat-name">{{ cat.name }}</span>
-        <span class="cat-count">{{ cat.files.length }}</span>
-      </div>
-      <!-- 展开/收起：grid-template-rows 0fr→1fr 过渡，内容按自身高度丝滑展开 -->
-      <div class="cat-body" :class="{ open: !collapsed[cat.name] }">
-        <ul class="file-list">
-          <li
-            v-for="f in cat.files"
-            :key="f.path"
-            class="file-item"
-            :class="{ active: isActive(f.path) }"
-            @click="emit('select', f)"
-          >
-            <span class="file-item-name">{{ f.name }}</span>
-            <span
-              v-if="f.redirect"
-              class="file-item-ext"
-              title="外链，点击直接跳转"
-            >
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                aria-hidden="true"
-              >
-                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
-                <polyline points="15 3 21 3 21 9"></polyline>
-                <line x1="10" y1="14" x2="21" y2="3"></line>
-              </svg>
-            </span>
-          </li>
-        </ul>
-      </div>
-    </div>
+    <template v-if="!tree.length">
+      <div class="sidebar-empty">加载中...</div>
+    </template>
+    <template v-else>
+      <!-- 递归渲染分类树：文件夹可嵌套（最多三层），叶子是文档条目 -->
+      <SideBarNode
+        v-for="node in tree"
+        :key="node.path"
+        :node="node"
+        :collapsed="collapsed"
+        :current="current"
+        @toggle="toggle"
+        @select="emit('select', $event)"
+      />
+    </template>
   </aside>
 </template>
