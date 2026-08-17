@@ -28,6 +28,8 @@ let dragMoved = false;
 // 开始拖拽：收起状态下**先不展开**，避免点击展开变成无动画的瞬间跳变；
 // 只有真正拖动（位移 >3px）时才跟手展开（宽度从 0 起），普通点击走 toggleNav 带动画
 function startResize(e) {
+  // 指针捕获：拖拽手柄时指针移到窗口外也能收到 pointerup，避免 .resizing 状态残留
+  e.currentTarget.setPointerCapture?.(e.pointerId);
   if (navCollapsed.value) {
     resizeState = { startX: e.clientX, startWidth: 0, wasCollapsed: true };
   } else {
