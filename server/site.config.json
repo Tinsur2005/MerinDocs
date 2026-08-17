@@ -1,6 +1,7 @@
 {
   "_说明": "本站点自定义配置文件：修改后刷新浏览器即可生效（无需重启服务）。请把下面的占位符替换成你自己的内容：siteTitle=浏览器标签页标题；navbar=顶部导航栏标题与右侧按钮；footer=页脚版权、Powered By 与备案号。空字符串可隐藏对应内容。",
-  "siteTitle": "MerinDocs - 记录学习过程的个人知识库",
+  "siteTitle": "MerinDocs",
+  "safeDomains": "tinsur.cn,github.com",
   "navbar": {
     "title": "MerinDocs",
     "buttons": [
@@ -21,6 +22,5 @@
       "gonganUrl": "https://beian.mps.gov.cn/#/query/webSearch?code=37021402000083",
       "gonganIcon": "[这里写公网安图标链接]"
     }
-  }
   }
 }

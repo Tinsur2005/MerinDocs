@@ -49,9 +49,16 @@ function clearSearch() {
   searching.value = false;
 }
 
-// 点击命中结果：复用与点击侧边栏相同的 select 事件（含链接型笔记跳转）
+// 点击命中结果：复用与点击侧边栏相同的 select 事件（含链接型笔记跳转）；
+// 附带关键词与命中小节锚点，目标页据此高亮搜索词并滚动到对应位置
 function pickResult(r) {
-  emit('select', { path: r.path, name: r.title, redirect: r.redirect });
+  emit('select', {
+    path: r.path,
+    name: r.title,
+    redirect: r.redirect,
+    anchor: r.anchor ?? null,
+    query: searchInput.value.trim(),
+  });
   clearSearch();
 }
 

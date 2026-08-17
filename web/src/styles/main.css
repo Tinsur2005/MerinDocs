@@ -11,7 +11,16 @@
   --color-text-secondary: #666;
   --color-muted: #999;
   --color-primary: #1f6feb;
+  /* 成功/安全语义色：外链弹窗的安全域名提示用 */
+  --color-success: #2ea44f;
   --color-border: #eaecef;
+  /* 行内代码配色（反引号 `` 段）：浅色灰底粉字，边框透明不占视觉 */
+  --inline-code-bg: rgba(27, 31, 35, 0.06);
+  --inline-code-color: #d63384;
+  --inline-code-border: transparent;
+  /* 搜索结果定位高亮：与搜索下拉里的 <mark> 同款浅黄 */
+  --search-highlight-bg: #ffe9a8;
+  --search-highlight-color: inherit;
   --color-sidebar-bg: #ffffff;
   --color-hover: #eef1f4;
   --color-tag-bg: #e9edf1;
@@ -61,6 +70,7 @@
   --color-text-secondary: #9d9d9d;
   --color-muted: #808080;
   --color-border: #333333;
+  --color-success: #3fb950;
   --color-sidebar-bg: #141414;
   --color-hover: #232323;
   --color-tag-bg: #2a2a2a;
@@ -85,6 +95,13 @@
   --color-code-btn: #c9d1d9;
   --color-code-btn-bg: #21262d;
   --color-code-btn-hover: #30363d;
+  /* 行内代码配色（反引号 `` 段）：亮字 + 比页面深一档的底 + 浅色描边，清晰可读 */
+  --inline-code-bg: #21262d;
+  --inline-code-color: #e6edf3;
+  --inline-code-border: #3d444d;
+  /* 搜索结果定位高亮：深色模式用深琥珀底 + 亮琥珀字，醒目又不刺眼 */
+  --search-highlight-bg: #57491a;
+  --search-highlight-color: #ffd479;
   /* 代码高亮 token 配色：GitHub Dark */
   --hl-base: #c9d1d9;
   --hl-keyword: #ff7b72;
@@ -597,6 +614,14 @@ body {
 .search-result mark {
   background: #ffe9a8;
   color: inherit;
+  padding: 0 1px;
+  border-radius: 2px;
+}
+
+/* 正文内的搜索结果高亮（跳转定位用）：配色随主题切换，浅色浅黄、深色深琥珀 */
+.search-highlight {
+  background: var(--search-highlight-bg);
+  color: var(--search-highlight-color);
   padding: 0 1px;
   border-radius: 2px;
 }
@@ -1276,6 +1301,11 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+/* 安全外链：绿底白勾，与未知外链的黄色/主题色区分 */
+.redirect-icon.safe {
+  background: var(--color-success);
 }
 
 .redirect-icon svg {

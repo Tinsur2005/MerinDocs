@@ -95,9 +95,13 @@ function goTo(file) {
     showRedirect.value = true;
     return;
   }
+  // 搜索结果带定位信息：用路由 query 传给目标页（hl=高亮关键词，anchor=命中小节）
+  const query = {};
+  if (file.query) query.hl = file.query;
+  if (file.anchor != null) query.anchor = String(file.anchor);
   // 跨视图切换（首页↔文档）由路由守卫显示全局遮罩，内容就绪后由目标视图隐藏；
   // 文档→文档同组件切换，由 DocView 自己管理遮罩（旧文档保留可见）
-  router.push({ name: 'doc', params: { docPath: file.path } });
+  router.push({ name: 'doc', params: { docPath: file.path }, query });
   sidebarOpen.value = false;
 }
 

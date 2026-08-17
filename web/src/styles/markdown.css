@@ -58,21 +58,17 @@
   margin: 6px 0;
 }
 
-/* 行内代码 */
+/* 行内代码（反引号 `` 段）：配色走 --inline-code-* 变量随主题切换，
+   浅色灰底粉字，深色亮字 + 深底 + 描边环，清晰可读。
+   边框用 inset 环而非 border，不占布局空间 */
 .markdown-body code {
-  background: rgba(27, 31, 35, 0.06);
+  background: var(--inline-code-bg);
+  color: var(--inline-code-color);
   padding: 2px 6px;
   border-radius: 4px;
   font-size: 0.88em;
   font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
-  color: #d63384;
-}
-
-/* 夜间模式下行内代码：用代码块同族的深色底 + 浅色文字，整体贴近深色代码块风格
-   （:not(pre code) 排除代码块，避免污染 pre 内的高亮 token） */
-:root[data-theme='dark'] .markdown-body code:not(pre code) {
-  background: var(--color-code-header);
-  color: var(--hl-base);
+  box-shadow: inset 0 0 0 1px var(--inline-code-border);
 }
 
 /* ===== 代码块：header + 行号 + 代码 ===== */
@@ -155,6 +151,7 @@
   background: transparent;
   padding: 0;
   color: var(--hl-base);
+  box-shadow: none; /* 代码块整体有自己的外壳，去掉行内代码的描边环 */
 }
 
 /* 代码高亮 token 配色：全部走变量，浅色 = GitHub Light，深色 = GitHub Dark */

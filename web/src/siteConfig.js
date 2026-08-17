@@ -8,6 +8,8 @@ import { getSiteConfig } from './api';
  */
 const defaultConfig = {
   siteTitle: 'MerinDocs - 记录学习过程的个人知识库',
+  // 安全外部域名（逗号分隔）：外链命中时弹窗显示"安全"样式，否则提示谨慎访问
+  safeDomains: '',
   navbar: {
     title: 'MerinDocs',
     buttons: [
@@ -37,6 +39,7 @@ let loaded = false;
 /** 深合并：服务端配置优先，缺的字段用内置默认值补齐 */
 function mergeConfig(src) {
   const out = { ...defaultConfig, ...src };
+  out.safeDomains = src.safeDomains ?? defaultConfig.safeDomains;
   if (src && src.navbar) out.navbar = { ...defaultConfig.navbar, ...src.navbar };
   if (src && src.footer) out.footer = { ...defaultConfig.footer, ...src.footer };
   if (src && src.footer && src.footer.beian) {

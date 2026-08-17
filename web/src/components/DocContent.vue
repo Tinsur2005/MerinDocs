@@ -1,10 +1,13 @@
 <script setup>
 import { ref, computed, watch, nextTick, onMounted, onUpdated, onBeforeUnmount } from 'vue';
 import TocNode from './TocNode.vue';
+import RedirectConfirm from './RedirectConfirm.vue';
 import { showToast } from '../toast';
 
 const props = defineProps({
   doc: { type: Object, default: null },
+  highlight: { type: String, default: '' }, // 搜索结果关键词（空格分隔），用于正文高亮
+  anchor: { type: Number, default: null }, // 命中小节序号（toc-{n}），用于滚动定位
 });
 const emit = defineEmits(['navigate']);
 
@@ -210,6 +213,9 @@ watch(
       enhanceImages();
       updateActive();
       window.scrollTo({ top: 0 });
+      // 搜索结果定位：先回顶部再高亮，随后平滑滚到命中小节
+      applySearchHighlight();
+      scrollToSearchAnchor();
       // 新文档渐显：移除再重新加回淡入 class，触发 CSS 动画重播
       const el = document.querySelector('.doc-layout');
       if (el) {
@@ -227,23 +233,135 @@ onUpdated(() => {
   nextTick(() => {
     enhanceCodeBlocks();
     enhanceImages();
+    applySearchHighlight(); // v-html 重渲染会清掉高亮标记，这里重建（不滚动）
   });
 });
+
+// ---- 搜索结果定位：高亮正文中的命中关键词，并按需滚动到命中小节 ----
+function escapeReg(s) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+let appliedQuery = ''; // 已应用高亮的查询；标记还在且查询没变时跳过重建，避免滚动等重渲染反复操作 DOM
+function clearSearchHighlight() {
+  const body = document.querySelector('.markdown-body');
+  if (!body) return;
+  body.querySelectorAll('.search-highlight').forEach((m) => {
+    m.parentNode.replaceChild(document.createTextNode(m.textContent), m);
+  });
+  body.normalize();
+}
+
+function applySearchHighlight() {
+  const body = document.querySelector('.markdown-body');
+  if (!body) return;
+  const q = (props.highlight || '').trim();
+  if (body.querySelectorAll('.search-highlight').length && appliedQuery === q) return;
+  clearSearchHighlight();
+  appliedQuery = q;
+  if (!q) return;
+  const terms = q.split(/\s+/).filter(Boolean).map(escapeReg);
+  const re = new RegExp(`(${terms.join('|')})`, 'gi');
+  // 遍历正文所有文本节点（含代码块），把命中词包成 <mark class="search-highlight">
+  const walker = document.createTreeWalker(body, NodeFilter.SHOW_TEXT);
+  const nodes = [];
+  while (walker.nextNode()) nodes.push(walker.currentNode);
+  for (const node of nodes) {
+    const text = node.nodeValue;
+    re.lastIndex = 0;
+    if (!re.test(text)) continue;
+    re.lastIndex = 0;
+    const frag = document.createDocumentFragment();
+    let last = 0;
+    let m;
+    while ((m = re.exec(text))) {
+      if (m.index > last) frag.appendChild(document.createTextNode(text.slice(last, m.index)));
+      const mark = document.createElement('mark');
+      mark.className = 'search-highlight';
+      mark.textContent = m[0];
+      frag.appendChild(mark);
+      last = m.index + m[0].length;
+    }
+    if (last < text.length) frag.appendChild(document.createTextNode(text.slice(last)));
+    node.parentNode.replaceChild(frag, node);
+  }
+}
+
+// 滚动到关键词出现的位置：优先第一个高亮标记（命中词所在的正文/代码块），
+// 让关键词落在视口上部偏中、周围上下文可见；无高亮时退回命中小节标题
+function scrollToSearchAnchor() {
+  const body = document.querySelector('.markdown-body');
+  const mark = body && body.querySelector('.search-highlight');
+  if (mark) {
+    const top =
+      mark.getBoundingClientRect().top + window.scrollY - Math.max(70, Math.round(window.innerHeight * 0.2));
+    window.scrollTo({ top, behavior: 'smooth' });
+    return;
+  }
+  if (props.anchor == null) return;
+  const id = `toc-${props.anchor}`;
+  if (document.getElementById(id)) scrollToHeading(id);
+}
+
+// 同一篇文档内反复点搜索结果（docPath 不变、仅 query 变）：重新高亮并滚动定位
+watch(
+  () => [props.highlight, props.anchor],
+  () => {
+    nextTick(() => {
+      applySearchHighlight();
+      scrollToSearchAnchor();
+    });
+  }
+);
+
+// 用户手动复制页面内容（Ctrl+C / 右键复制）：弹提示引导标注来源。
+// 代码块内的"复制"按钮走 navigator.clipboard，不触发 copy 事件，不会重复弹
+function onCopy() {
+  const sel = window.getSelection();
+  if (!sel || !sel.toString().trim()) return; // 没选中内容（如空选区）不提示
+  showToast('复制成功，转载请标注来源');
+}
+
+// ---- 正文外链：点击 http(s) 链接先弹确认窗（安全域名判断在 RedirectConfirm 内），确认后新标签打开 ----
+const redirectUrl = ref('');
+const showRedirect = ref(false);
+
+function onClick(e) {
+  const a = e.target.closest('.markdown-body a');
+  if (!a) return;
+  const href = a.getAttribute('href');
+  if (!/^https?:\/\//i.test(href || '')) return; // 站内/锚点/相对链接不拦截
+  e.preventDefault();
+  redirectUrl.value = href;
+  showRedirect.value = true;
+}
+
+function onRedirectConfirm() {
+  window.open(redirectUrl.value, '_blank');
+  showRedirect.value = false;
+}
 
 onMounted(() => {
   window.addEventListener('scroll', updateActive, { passive: true });
   window.addEventListener('keydown', onKey);
-  // 进入新文档（组件挂载）：补跑代码块/图片增强、刷新 TOC 高亮并回到顶部
+  document.addEventListener('copy', onCopy);
+  document.addEventListener('click', onClick);
+  // 进入新文档（组件挂载）：补跑代码块/图片增强、刷新 TOC 高亮并回到顶部；
+  // 深链接（刷新带 ?hl= 的地址）时 watcher 不会触发，这里也要应用搜索定位
   nextTick(() => {
     enhanceCodeBlocks();
     enhanceImages();
     updateActive();
     window.scrollTo({ top: 0 });
+    applySearchHighlight();
+    scrollToSearchAnchor();
   });
 });
 onBeforeUnmount(() => {
   window.removeEventListener('scroll', updateActive);
   window.removeEventListener('keydown', onKey);
+  document.removeEventListener('copy', onCopy);
+  document.removeEventListener('click', onClick);
   // 组件卸载时若有灯箱残留，恢复页面滚动
   document.body.style.overflow = '';
 });
@@ -309,6 +427,9 @@ onBeforeUnmount(() => {
     </aside>
   </div>
   <div v-else class="doc-placeholder">请从左侧选择一篇文档</div>
+
+  <!-- 正文外链跳转确认弹窗（含安全域名判断） -->
+  <RedirectConfirm v-model="showRedirect" :url="redirectUrl" @confirm="onRedirectConfirm" />
 
   <!-- 图片灯箱：@wheel.prevent 拦截整个蒙层的滚轮，保证背景页面不被滑动 -->
   <teleport to="body">

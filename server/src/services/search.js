@@ -39,6 +39,35 @@ function makeSnippet(text, term, radius = 30, maxLen = 90) {
   return (start > 0 ? '…' : '') + raw + (end < text.length ? '…' : '');
 }
 
+/**
+ * 定位 firstIdx 所在的小节：返回它之前出现的标题个数（即 toc 数组下标，锚点 id 为 `toc-${n}`）。
+ * 跳过围栏代码块里的假标题；没有任何标题覆盖时返回 null（前端跳到文章顶部）。
+ */
+function findAnchorIndex(text, firstIdx) {
+  const lines = text.split('\n');
+  let offset = 0;
+  let inFence = false;
+  let current = null;
+  let headingCount = 0;
+  for (const line of lines) {
+    const lineStart = offset;
+    const lineEnd = offset + line.length + 1; // 含换行符
+    if (/^\s{0,3}(```|~~~)/.test(line)) {
+      inFence = !inFence; // 围栏开始/结束行本身不算标题，围栏内的 # 只是代码
+      if (firstIdx < lineEnd) return current;
+      offset = lineEnd;
+      continue;
+    }
+    if (!inFence && /^\s{0,3}#{1,6}\s+/.test(line)) {
+      if (lineStart <= firstIdx) current = headingCount;
+      headingCount++;
+    }
+    if (firstIdx < lineEnd) return current;
+    offset = lineEnd;
+  }
+  return current;
+}
+
 export async function searchNotes(query) {
   const terms = tokenize(query);
   if (terms.length === 0) return [];
@@ -94,6 +123,8 @@ export async function searchNotes(query) {
       redirect: null,
       titleHit,
       firstIdx: firstIdx === Infinity ? 0 : firstIdx,
+      // 命中所在小节（toc 下标），供前端跳转定位；仅标题命中时无正文锚点
+      anchor: firstIdx === Infinity ? null : findAnchorIndex(text, firstIdx),
     });
   }
 

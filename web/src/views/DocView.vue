@@ -69,6 +69,20 @@ watch(
   { immediate: true }
 );
 
+// 搜索结果定位：hl = 要高亮的关键词，anchor = 命中小节序号（toc-{n}）
+const hlQuery = ref(route.query.hl || '');
+const anchorIndex = ref(route.query.anchor != null && route.query.anchor !== '' ? Number(route.query.anchor) : null);
+
+// 同一篇文档内的定位变化（docPath 不变、仅 query 变，如反复点不同搜索结果）：
+// 更新传给 DocContent 的 props，由它重新高亮 + 滚动
+watch(
+  () => [route.query.hl, route.query.anchor],
+  ([hl, anchor]) => {
+    hlQuery.value = hl || '';
+    anchorIndex.value = anchor != null && anchor !== '' ? Number(anchor) : null;
+  }
+);
+
 // 上一篇/下一篇：先丝滑滚回顶部，真正滚到顶后再加载新文章
 // 用 rAF 手动动画而非依赖 scrollend/超时：长页面滚动耗时长也不会提前跳转
 let scrollRaf = 0;
@@ -139,7 +153,7 @@ function onRedirectConfirm() {
   </Transition>
 
   <!-- 切换文档时旧文档保留在页面下方，新文档就绪后内容替换并渐显 -->
-  <DocContent v-if="doc" :doc="doc" @navigate="goRel" />
+  <DocContent v-if="doc" :doc="doc" :highlight="hlQuery" :anchor="anchorIndex" @navigate="goRel" />
   <NotFoundView v-else-if="!doc && !loading" />
 
   <!-- 外链跳转确认弹窗 -->
