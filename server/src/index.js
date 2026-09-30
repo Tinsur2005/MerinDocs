@@ -9,6 +9,9 @@ import docRouter from './routes/doc.js';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 
+// nginx 反代一跳：信任 X-Forwarded-*，req.ip 取真实客户端 IP（解锁冷却按 IP 计数）
+app.set('trust proxy', 1);
+
 app.use(cors());
 app.use(express.json());
 

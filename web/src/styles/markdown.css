@@ -45,6 +45,56 @@
   margin: 8px 0;
 }
 
+/* 任务清单：自绘复选框，勾选状态深浅色模式都清晰，与正文保持间距 */
+.markdown-body ul.contains-task-list {
+  list-style: none;
+  padding-left: 8px;
+}
+.markdown-body ul.contains-task-list .task-list-item {
+  list-style: none;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  line-height: 1.7;
+}
+.markdown-body .task-list-item-checkbox {
+  appearance: none;
+  -webkit-appearance: none;
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  align-self: baseline;
+  transform: translateY(2px);
+  background: var(--color-bg);
+  border: 1.5px solid var(--color-border);
+  border-radius: 4px;
+  cursor: default;
+  position: relative;
+}
+.markdown-body .task-list-item-checkbox:checked {
+  background: var(--color-success);
+  border-color: var(--color-success);
+}
+.markdown-body .task-list-item-checkbox:checked::after {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 1px;
+  width: 5px;
+  height: 9px;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+.markdown-body .task-list-item > p {
+  margin: 0;
+}
+.markdown-body .task-list-item-done {
+  color: var(--color-muted);
+  text-decoration: line-through;
+}
+
 .markdown-body blockquote {
   margin: 16px 0;
   padding: 10px 16px;

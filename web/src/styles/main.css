@@ -1524,3 +1524,116 @@ body {
     transform: scale(1);
   }
 }
+
+/* 加密文档密码页 */
+.doc-password-wrap {
+  width: 100%;
+  max-width: 1180px;
+  margin: 0 auto;
+  min-width: 0;
+  display: flex;
+  justify-content: center;
+  padding: 90px 20px 40px;
+}
+
+.doc-password-card {
+  width: 100%;
+  max-width: 360px;
+  padding: 34px 32px 30px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.08);
+  text-align: center;
+}
+
+.doc-password-icon {
+  width: 52px;
+  height: 52px;
+  margin: 0 auto 16px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+  color: var(--color-primary);
+}
+
+.doc-password-icon svg {
+  width: 26px;
+  height: 26px;
+}
+
+.doc-password-title {
+  margin: 0 0 8px;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-text);
+  word-break: break-all;
+}
+
+.doc-password-hint {
+  margin: 0 0 20px;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.doc-password-input {
+  width: 100%;
+  height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-bg);
+  font-size: 14px;
+  color: var(--color-text);
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.doc-password-input::placeholder {
+  color: var(--color-muted);
+}
+
+.doc-password-input:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 14%, transparent);
+}
+
+.doc-password-error {
+  margin-top: 10px;
+  font-size: 13px;
+  color: #e5484d;
+}
+
+.doc-password-cooldown {
+  margin-top: 10px;
+  font-size: 13px;
+  color: #b45309;
+}
+
+:root[data-theme='dark'] .doc-password-cooldown {
+  color: #fbbf24;
+}
+
+.doc-password-btn {
+  width: 100%;
+  height: 38px;
+  margin-top: 18px;
+  border: none;
+  border-radius: 8px;
+  background: var(--color-primary);
+  color: #fff;
+  font-size: 14px;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.doc-password-btn:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.doc-password-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}

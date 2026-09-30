@@ -2,6 +2,7 @@
 import { ref, watch, onBeforeUnmount } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import DocContent from '../components/DocContent.vue';
+import PasswordGate from '../components/PasswordGate.vue';
 import ProgressBar from '../components/ProgressBar.vue';
 import RedirectConfirm from '../components/RedirectConfirm.vue';
 import NotFoundView from './NotFoundView.vue';
@@ -137,6 +138,12 @@ function onRedirectConfirm() {
   window.open(redirectUrl.value, '_blank');
   showRedirect.value = false;
 }
+
+// 密码校验通过：直接用解锁响应替换为正文（已在 API 层完成缓存与令牌持久化）
+function onUnlocked(data) {
+  doc.value = data;
+  setDocTitle(data.title);
+}
 </script>
 
 <template>
@@ -152,8 +159,15 @@ function onRedirectConfirm() {
     </div>
   </Transition>
 
+  <!-- 加密文档：先显示密码输入页，解锁后替换为正文 -->
+  <PasswordGate
+    v-if="doc && doc.locked"
+    :doc-path="route.params.docPath"
+    :title="doc.title"
+    @unlocked="onUnlocked"
+  />
   <!-- 切换文档时旧文档保留在页面下方，新文档就绪后内容替换并渐显 -->
-  <DocContent v-if="doc" :doc="doc" :highlight="hlQuery" :anchor="anchorIndex" @navigate="goRel" />
+  <DocContent v-else-if="doc" :doc="doc" :highlight="hlQuery" :anchor="anchorIndex" @navigate="goRel" />
   <NotFoundView v-else-if="!doc && !loading" />
 
   <!-- 外链跳转确认弹窗 -->

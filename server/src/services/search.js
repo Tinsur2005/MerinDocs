@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { NOTE_DIR } from '../config.js';
 import { getFlatList } from './scanner.js';
+import { extractPassword } from '../utils/protect.js';
 
 /**
  * 全库全局搜索：在 note 目录所有 md 笔记中按关键词（空格分隔、需全部命中）
@@ -93,13 +94,32 @@ export async function searchNotes(query) {
       continue;
     }
 
-    let text;
+    let raw;
     try {
-      text = await getText(path.join(NOTE_DIR, file.path));
+      raw = await getText(path.join(NOTE_DIR, file.path));
     } catch {
       continue; // 读不到（已删除 / 无权限）则跳过
     }
 
+    // 加密文档：仅按文件名匹配，不索引、不返回任何正文片段
+    const { password, body } = extractPassword(raw);
+    if (password) {
+      if (!terms.every((t) => name.includes(t))) continue;
+      results.push({
+        path: file.path,
+        title: file.name,
+        category: file.category,
+        snippet: '',
+        redirect: null,
+        locked: true,
+        titleHit: true,
+        firstIdx: 0,
+        anchor: null,
+      });
+      continue;
+    }
+
+    const text = body;
     const lower = text.toLowerCase();
     if (!terms.every((t) => lower.includes(t)) && !terms.every((t) => name.includes(t))) {
       continue;
