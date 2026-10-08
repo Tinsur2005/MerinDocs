@@ -6,7 +6,7 @@ import path from 'node:path';
  * "Java介绍"   -> { order: 999, name: "Java介绍" }
  */
 export function parseFileName(fileName) {
-  const base = fileName.replace(/\.md$/i, '');
+  const base = fileName.replace(/\.(md|pdf)$/i, '');
   const m = base.match(/^(\d+)[-_\s.]?(.*)$/);
   if (m) {
     return { order: parseInt(m[1], 10), name: base };

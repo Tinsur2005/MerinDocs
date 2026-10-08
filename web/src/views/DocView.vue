@@ -3,6 +3,7 @@ import { ref, watch, onBeforeUnmount } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import DocContent from '../components/DocContent.vue';
 import PasswordGate from '../components/PasswordGate.vue';
+import PdfViewer from '../components/PdfViewer.vue';
 import ProgressBar from '../components/ProgressBar.vue';
 import RedirectConfirm from '../components/RedirectConfirm.vue';
 import NotFoundView from './NotFoundView.vue';
@@ -159,9 +160,11 @@ function onUnlocked(data) {
     </div>
   </Transition>
 
+  <!-- PDF 文档：浏览器内置预览 -->
+  <PdfViewer v-if="doc && doc.kind === 'pdf'" :doc="doc" @navigate="goRel" />
   <!-- 加密文档：先显示密码输入页，解锁后替换为正文 -->
   <PasswordGate
-    v-if="doc && doc.locked"
+    v-else-if="doc && doc.locked"
     :doc-path="route.params.docPath"
     :title="doc.title"
     @unlocked="onUnlocked"

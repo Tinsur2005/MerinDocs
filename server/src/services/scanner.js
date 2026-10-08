@@ -33,19 +33,22 @@ async function scanDir(dirPath, relPath, depth) {
       if (children.length === 0) continue; // 空目录不展示
       const { order, name } = parseFileName(entry.name);
       nodes.push({ type: 'dir', name, order, path: childRel, children });
-    } else if (depth > 0 && entry.isFile() && entry.name.toLowerCase().endsWith('.md')) {
+    } else if (depth > 0 && entry.isFile() && /\.(md|pdf)$/i.test(entry.name)) {
       const { order, name } = parseFileName(entry.name);
+      const kind = /\.pdf$/i.test(entry.name) ? 'pdf' : 'md';
 
-      // 读取内容，检测"整份文件只有一行 URL"的链接型笔记
+      // 读取内容，检测"整份文件只有一行 URL"的链接型笔记（仅 md；pdf 是二进制）
       let redirect = null;
-      try {
-        const content = await fs.readFile(path.join(dirPath, entry.name), 'utf-8');
-        redirect = extractRedirect(content);
-      } catch {
-        // 读不到内容就当普通文档
+      if (kind === 'md') {
+        try {
+          const content = await fs.readFile(path.join(dirPath, entry.name), 'utf-8');
+          redirect = extractRedirect(content);
+        } catch {
+          // 读不到内容就当普通文档
+        }
       }
 
-      nodes.push({ type: 'file', name, order, path: childRel, redirect });
+      nodes.push({ type: 'file', name, order, path: childRel, kind, redirect });
     }
   }
   nodes.sort(sortNodes(depth));

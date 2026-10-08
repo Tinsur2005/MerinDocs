@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import path from 'node:path';
+import fs from 'node:fs/promises';
 import { NOTE_DIR } from '../config.js';
 import { scanTree, getFlatList, clearCache } from '../services/scanner.js';
 import { renderFile, clearRenderCache } from '../services/parser.js';
@@ -36,8 +37,8 @@ router.get('/home', async (req, res) => {
   }
 });
 
-/** 加载文档并组装标题/分类/上下篇；路径不合法抛 403 */
-async function loadDoc(relPath) {
+/** 路径校验 + 上下篇导航；路径不合法抛 403 */
+async function getNav(relPath) {
   const absPath = path.resolve(NOTE_DIR, relPath);
   if (!absPath.startsWith(NOTE_DIR)) {
     const err = new Error('forbidden');
@@ -45,26 +46,33 @@ async function loadDoc(relPath) {
     throw err;
   }
 
-  const entry = await renderFile(absPath);
-  const title = entry.title || path.basename(relPath, '.md');
-
   const flat = await getFlatList();
   const idx = flat.findIndex((f) => f.path === relPath);
   const prev = idx > 0 ? flat[idx - 1] : null;
   const next = idx >= 0 && idx < flat.length - 1 ? flat[idx + 1] : null;
 
-  return { entry, title, category: relPath.split('/')[0], prev, next };
+  return { absPath, flat, idx, prev, next, category: relPath.split('/')[0] };
+}
+
+/** 加载 md 文档并组装标题（PDF 不走渲染） */
+async function loadDoc(relPath) {
+  const nav = await getNav(relPath);
+  const entry = await renderFile(nav.absPath);
+  const title = entry.title || path.basename(relPath, '.md');
+  return { entry, title, ...nav };
 }
 
 /** 锁定状态：只返回侧栏已可见的信息，不含 html/toc */
 function lockedPayload(d) {
-  return { locked: true, title: d.title, category: d.category, prev: d.prev, next: d.next };
+  return { kind: 'md', locked: true, title: d.title, category: d.category, prev: d.prev, next: d.next };
 }
 
 /** 解锁后的完整响应；加密文档附带密码令牌供前端持久化 */
 function fullPayload(d) {
   return {
+    kind: 'md',
     locked: false,
+    protected: Boolean(d.entry.password),
     title: d.title,
     category: d.category,
     html: d.entry.html,
@@ -83,13 +91,51 @@ router.get('/doc', async (req, res) => {
       return res.status(400).json({ error: 'missing path param' });
     }
 
-    const data = await loadDoc(relPath);
-    if (data.entry.password && hashPassword(data.entry.password) !== String(req.query.token || '')) {
+    const nav = await getNav(relPath);
+
+    // PDF：不渲染，返回预览地址与上下篇（无密码/TOC）
+    if (/\.pdf$/i.test(relPath)) {
+      return res.json({
+        kind: 'pdf',
+        title: path.basename(relPath, path.extname(relPath)),
+        category: nav.category,
+        prev: nav.prev,
+        next: nav.next,
+        url: `/api/pdf?path=${encodeURIComponent(relPath)}`,
+      });
+    }
+
+    const entry = await renderFile(nav.absPath);
+    const data = { entry, title: entry.title || path.basename(relPath, '.md'), ...nav };
+    if (entry.password && hashPassword(entry.password) !== String(req.query.token || '')) {
       return res.json(lockedPayload(data));
     }
     res.json(fullPayload(data));
   } catch (e) {
     res.status(e.status || 404).json({ error: e.message });
+  }
+});
+
+/** PDF 文件：内联发送（浏览器内置预览），res.sendFile 自动支持 Range 分段加载 */
+router.get('/pdf', async (req, res) => {
+  try {
+    const relPath = req.query.path;
+    if (!relPath) {
+      return res.status(400).json({ error: 'missing path param' });
+    }
+    const absPath = path.resolve(NOTE_DIR, relPath);
+    if (!absPath.startsWith(NOTE_DIR) || !/\.pdf$/i.test(relPath)) {
+      return res.status(403).json({ error: 'forbidden' });
+    }
+    await fs.access(absPath); // 文件不存在 -> 404
+    // 保存/下载时使用原始中文文件名
+    res.setHeader(
+      'Content-Disposition',
+      `inline; filename*=UTF-8''${encodeURIComponent(path.basename(absPath))}`
+    );
+    res.sendFile(absPath);
+  } catch (e) {
+    res.status(404).json({ error: e.message });
   }
 });
 

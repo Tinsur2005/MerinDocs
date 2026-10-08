@@ -13,6 +13,9 @@ const emit = defineEmits(['navigate']);
 
 const activeId = ref('');
 
+// 加密文档顶部的黄色提示条：可手动关闭，切换到新文档时重新出现
+const showProtectedNotice = ref(true);
+
 // ---- 目录树：把扁平 toc 按标题层级挂成树，支持逐级展开/收起 ----
 // 折叠状态：记录被收起的节点 id（Set）；点击箭头切换，滚动到某节时自动展开其祖先链
 const collapsed = ref(new Set());
@@ -200,7 +203,8 @@ function updateActive() {
 watch(
   () => props.doc,
   (d) => {
-    // 新文档：重置目录折叠状态（1~2 级展开、3 级及以上收起），并展开首个标题链
+    // 新文档：重置加密提示条与目录折叠状态（1~2 级展开、3 级及以上收起），并展开首个标题链
+    showProtectedNotice.value = true;
     collapsed.value = seedCollapsed(d?.toc || []);
     const first = d?.toc?.[0];
     if (first) {
@@ -371,6 +375,16 @@ onBeforeUnmount(() => {
   <!-- 先渲染内容：切换文章时保留旧内容可见，避免整屏闪"加载中" -->
   <div v-if="doc" class="doc-layout doc-fade-in">
     <article class="doc-article">
+      <!-- 加密文档提示条：仅解锁后的加密文档显示，可关闭 -->
+      <div v-if="doc.protected && showProtectedNotice" class="protected-notice" role="note">
+        <svg class="protected-notice-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+          <line x1="12" y1="9" x2="12" y2="13"></line>
+          <line x1="12" y1="17" x2="12.01" y2="17"></line>
+        </svg>
+        <span class="protected-notice-text">您正在访问的是加密文档，本文档不允许任何形式的转发及二创，包括但不限于转发给其他人、发布到其他网站或平台等，谢谢配合。</span>
+        <button class="protected-notice-close" type="button" aria-label="关闭提示" @click="showProtectedNotice = false">×</button>
+      </div>
       <!-- 标题由 markdown-body 里的 h1 自然渲染，避免重复 -->
       <div class="markdown-body" v-html="doc.html"></div>
       <nav class="doc-nav">

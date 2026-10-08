@@ -68,7 +68,8 @@ const totalFiles = computed(() => {
             @click="emit('select', child)"
           >
             <span class="file-item-name">{{ child.name }}</span>
-            <span v-if="child.redirect" class="file-item-ext" title="外链，点击直接跳转">
+            <span v-if="child.kind === 'pdf'" class="file-item-pdf-badge">PDF</span>
+            <span v-else-if="child.redirect" class="file-item-ext" title="外链，点击直接跳转">
               <svg
                 viewBox="0 0 24 24"
                 fill="none"
@@ -97,7 +98,8 @@ const totalFiles = computed(() => {
     @click="emit('select', node)"
   >
     <span class="file-item-name">{{ node.name }}</span>
-    <span v-if="node.redirect" class="file-item-ext" title="外链，点击直接跳转">
+    <span v-if="node.kind === 'pdf'" class="file-item-pdf-badge">PDF</span>
+    <span v-else-if="node.redirect" class="file-item-ext" title="外链，点击直接跳转">
       <svg
         viewBox="0 0 24 24"
         fill="none"
