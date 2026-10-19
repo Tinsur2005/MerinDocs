@@ -1,12 +1,19 @@
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import { useRoute } from 'vue-router';
 import { siteConfig } from '../siteConfig';
+import { user, loaded, ssoEnabled } from '../auth';
 import { showToast } from '../toast';
+import UserMenu from './UserMenu.vue';
 
 defineEmits(['toggle-sidebar']);
 
 const route = useRoute();
+
+// WordPress 单点登录：整页跳转中转端点，登录后回到当前页
+const loginHref = computed(
+  () => `/api/auth/login?redirect=${encodeURIComponent(route.fullPath)}`
+);
 
 // 导航按钮的 url 以 / 开头视为站内路由（router-link），否则为外链（<a>）
 function isInternal(url) {
@@ -112,5 +119,11 @@ onBeforeUnmount(() => {
         </template>
       </span>
     </nav>
+
+    <!-- WordPress 登录态：未登录是「登录」链接；已登录是头像昵称用户弹层 -->
+    <div class="header-auth">
+      <a v-if="loaded && ssoEnabled && !user" class="header-link" :href="loginHref">登录</a>
+      <UserMenu v-else-if="loaded && ssoEnabled && user" />
+    </div>
   </header>
 </template>

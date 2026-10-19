@@ -9,6 +9,8 @@ import ToastStack from './components/ToastStack.vue';
 import RedirectConfirm from './components/RedirectConfirm.vue';
 import { getTree } from './api';
 import { loadSiteConfig } from './siteConfig';
+import { fetchMe } from './auth';
+import { showToast } from './toast';
 import { viewLoading } from './loading';
 
 const tree = ref([]);
@@ -78,6 +80,20 @@ function toggleNav() {
 onMounted(async () => {
   // 站点自定义配置（标题 / 导航按钮 / 备案号等）要最先加载，供各组件使用
   loadSiteConfig();
+  // WordPress 单点登录状态（头部登录/登出入口）
+  fetchMe();
+
+  // OAuth 授权回调带回的结果提示，并从地址栏清掉标记
+  if (route.query.sso === 'denied') {
+    showToast('已取消授权');
+  } else if (route.query.sso === 'error') {
+    showToast('登录失败或授权已过期，请重试');
+  }
+  if (route.query.sso) {
+    const query = { ...route.query };
+    delete query.sso;
+    router.replace({ path: route.path, query });
+  }
   try {
     const data = await getTree();
     tree.value = data.categories;

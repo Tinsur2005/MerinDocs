@@ -5,6 +5,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { NOTE_DIR, PORT } from './config.js';
 import docRouter from './routes/doc.js';
+import authRouter from './routes/auth.js';
+import { attachUser } from './middleware/auth.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -24,8 +26,12 @@ app.use(
   })
 );
 
+// WordPress SSO：为所有 /api 请求附加当前用户（本期不拦截）
+app.use('/api', attachUser);
+
 // API 路由
 app.use('/api', docRouter);
+app.use('/api/auth', authRouter);
 
 // 生产模式：托管前端构建产物（web/dist），单端口运行
 const WEB_DIST = path.resolve(__dirname, '..', '..', 'web', 'dist');

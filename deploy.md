@@ -379,7 +379,86 @@ git push
 
 ---
 
-## 10. 常见问题排查
+## 10. WordPress 授权登录（OAuth 授权码模式）
+
+> 效果类似「QQ 互联」：笔记站有**独立的登录会话**，不与 WordPress 共享 Cookie。在笔记站点「登录」→ 跳到 WordPress 的授权确认页 → 登录 WP（如未登录）并点「同意授权」→ 跳回笔记站自动完成登录。笔记站点「退出登录」**只退出笔记站**，WordPress 仍保持登录。
+>
+> **前提**：WordPress 与笔记站都是 HTTPS；两个域名可以不同主域（但建议同主域名的子域，如 `www.tinsur.cn` / `note.tinsur.cn`）。
+
+### 10.1 WordPress：移除旧的共享 Cookie 配置
+
+本方案**不需要、也不能**设置共享 Cookie 域。如果以前按旧方案在 `wp-config.php` 加过下面这行，务必删除或注释掉，否则可能导致 WordPress 前台无法登录：
+
+```php
+// 删除这一行（旧共享 Cookie 方案遗留）：
+define('COOKIE_DOMAIN', '.tinsur.cn');
+```
+
+改完后清一次浏览器 Cookie、重新登录 WordPress 确认登录恢复正常。
+
+### 10.2 WordPress：安装/替换授权插件
+
+把项目里 `wordpress/merin-sso.php` 上传到 WordPress 的 `wp-content/mu-plugins/` 目录（没有 `mu-plugins` 文件夹就新建），放进去即生效，无需后台启用。**若装过旧版插件，直接用新文件整个覆盖。**
+
+插件提供两个地址：
+
+- `/merin-sso/authorize/`：用户看的授权确认页（未登录会先跳 WP 登录页，登录后自动回到授权页）
+- `/merin-sso/exchange/`：笔记站服务端用授权码换用户信息（需 client_secret，浏览器接触不到）
+
+插件顶部的客户端注册表需要与笔记站保持一致：
+
+```php
+'merindocs' => array(
+    'name'          => 'MerinDocs 笔记站',                    // 授权页上显示的应用名
+    'secret'        => '92b2bb13f8f750ac9d794fee5f25c244...', // 双方一致的随机密钥
+    'redirect_uris' => array(
+        'https://note.tinsur.cn/api/auth/callback',           // 必须逐字符完全匹配
+    ),
+),
+```
+
+- 笔记站域名不同时，改 `redirect_uris` 为实际的 `https://你的笔记站域名/api/auth/callback`；
+- 建议把 `secret` 换成你自己生成的随机串（如 `node -e "console.log(require('crypto').randomBytes(24).toString('hex'))"`），笔记站环境变量用同一个值；
+- 插件端点变化后会自动刷新一次固定链接规则；若授权页返回 404，到 WP 后台「设置 → 固定链接」点一次「保存」。
+
+### 10.3 笔记站：配置环境变量并重启
+
+编辑项目根目录 `ecosystem.config.js` 的 `env`：
+
+```js
+SITE_URL: 'https://note.tinsur.cn',           // 笔记站对外地址，用于拼 OAuth 回调地址
+WORDPRESS_URL: 'https://www.tinsur.cn',       // WordPress 地址，不带尾斜杠
+WP_CLIENT_ID: 'merindocs',                    // 与插件注册的 key 一致
+WP_CLIENT_SECRET: '92b2bb13f8f750ac...',      // 与插件里的 secret 完全一致
+// WORDPRESS_INTERNAL_URL: 'http://127.0.0.1', // 可选：服务器访问自身公网域名不通时启用
+// SESSION_TTL_DAYS: 30,                        // 可选：笔记站登录保持天数，默认 30
+```
+
+> `SITE_URL` 必须与插件白名单中的回调地址同根（`${SITE_URL}/api/auth/callback`）。若 nginx 反向代理已配置 `proxy_set_header Host $host;` 也可省略此项，但建议显式配置，避免代理头缺失时回调地址变成 `https://127.0.0.1/...` 被 WP 拒绝。
+
+重启并**让新环境变量生效**：
+
+```bash
+pm2 restart merin-docs --update-env
+```
+
+未配置 `WORDPRESS_URL` 或 `WP_CLIENT_SECRET` 时，登录入口自动隐藏，站点照常公开访问。
+
+### 10.4 验证
+
+1. 未登录时笔记站右上角显示「登录」；点击后跳到 WordPress，出现「MerinDocs 笔记站 请求获得你的账户基本信息」授权页；
+2. 未登录 WP 时会先到 WP 登录页，登录成功后自动回到授权页（参数不丢）；
+3. 点「同意授权」→ 跳回笔记站原页面，右上角显示 WP 昵称；
+4. 点「拒绝」→ 回到笔记站首页并提示「已取消授权」，不登录；
+5. 点「退出登录」→ 笔记站变为未登录；直接打开 WordPress 确认**仍是登录状态**；
+6. 在笔记站再次点「登录」，因 WP 仍登录，会直接出授权页（无需再输密码）。
+
+> 说明：授权码一次性、60 秒过期；state 参数防 CSRF；笔记站会话 Cookie 为 HttpOnly + SameSite=Lax（HTTPS 下自动加 Secure），默认保持 30 天。
+> 本地开发可用环境变量 `AUTH_DEV_USER=dev` 模拟登录态；生产环境不要设置。
+
+---
+
+## 11. 常见问题排查
 
 | 现象 | 可能原因 / 处理 |
 | --- | --- |
@@ -393,10 +472,17 @@ git push
 | Webhook收到 **200 但响应头是 `Server: nginx`**、body 是 `null`、插件日志为空 | 请求没打进插件，被宝塔 Nginx 兜底接住。**根因：Gitee 里填的 WebHook URL 和插件生成的完整回调地址不一致**。回到插件管理页**原样复制**回调地址（形如 `http://IP:8888/...` 含密钥）贴进 Gitee，别手改、别换域名；再在服务器 `curl -i -X POST "http://127.0.0.1:8888/插件路径"` 看插件日志是否有记录来区分是插件问题还是 URL 问题 |
 | webhook 触发但站点没更新 | 在宝塔 webhook 插件里对该任务点「测试」看脚本输出。git pull 失败常见原因：① 免密没配好（`git config credential.helper store` + 手动 pull 一次）；② 脚本里的分支名（master/main）与本地 push 的分支不一致；③ 脚本里 `cd` 的路径不对 |
 | 脚本输出 git pull 冲突/无法拉取 | 服务器上有人手动改过 note。备份后 `git reset --hard origin/master` 强制对齐仓库（分支名按实际） |
+| 装了登录插件后 **WordPress 前台无法登录** | 旧方案在 `wp-config.php` 里加的 `COOKIE_DOMAIN` 导致，删掉该行并清理浏览器 Cookie 后重新登录；新授权码方案不需要任何 Cookie 域配置 |
+| 笔记站右上角没有「登录」入口 | `WORDPRESS_URL` 或 `WP_CLIENT_SECRET` 未配置/未生效。检查 `ecosystem.config.js` 后执行 `pm2 restart merin-docs --update-env`；可用 `curl -s http://127.0.0.1:3000/api/auth/me` 确认 `ssoEnabled` 为 true |
+| 点登录跳到 WP 后提示「授权请求无效」 | 请求里的 `redirect_uri` 与插件 `redirect_uris` 白名单不完全一致（协议/域名/端口/路径逐字符匹配），或 `client_id` 未登记。先在服务器执行 `curl -s -i "http://127.0.0.1:3000/api/auth/login?redirect=/" | grep -i location` 看实际跳转：若 `redirect_uri=https%3A%2F%2F127.0.0.1%2F...`，说明 nginx 未透传 Host 头，在 `ecosystem.config.js` 配置 `SITE_URL` 后 `pm2 start ecosystem.config.js --update-env`；域名不符则改插件注册表 |
+| 授权页/换取接口返回 404 | 插件固定链接规则未生效，WP 后台「设置 → 固定链接」点一次保存；确认新版 `mu-plugins/merin-sso.php` 已覆盖旧文件 |
+| 点「同意授权」后进了 **WordPress 后台**、没回笔记站，笔记站仍未登录 | 旧版插件（<2.0.1）用 `wp_safe_redirect` 跳回调地址，该函数只允许跳 WP 自身主机，跨子域（www → note）会被拦截并兜底到 wp-admin。用新版 `merin-sso.php`（v2.0.1+）覆盖 mu-plugins 文件即可，无需重启 |
+| 授权后提示「登录失败或授权已过期」 | 授权码 60 秒过期且只能用一次，重新走一遍登录即可；反复出现则看 `pm2 logs merin-docs` 里 `[MerinDocs][SSO]` 日志（多为笔记站服务器连不上 WordPress，可在 `ecosystem.config.js` 配置 `WORDPRESS_INTERNAL_URL`），并核对双方 `secret` 是否一致 |
+| 退出登录提示 400 bad source | 登出必须从笔记站页面点击触发（校验来源防第三方诱导登出）；直接在地址栏访问该接口会被拒绝，属正常。退出只影响笔记站，WordPress 保持登录是设计如此 |
 
 ---
 
-## 11. 服务器上需要保留/排除的内容速查
+## 12. 服务器上需要保留/排除的内容速查
 
 > 压缩时具体勾哪些，见 **第 3.1 节「本地压缩」清单**，这里只做汇总：
 
