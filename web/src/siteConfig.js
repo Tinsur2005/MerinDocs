@@ -7,11 +7,11 @@ import { getSiteConfig } from './api';
  * 配置接口加载失败时回退到下面这套内置默认值，保证站点始终可用。
  */
 const defaultConfig = {
-  siteTitle: 'MerinDocs - 记录学习过程的个人知识库',
+  siteTitle: 'TinsurNote - 记录学习过程的个人知识库',
   // 安全外部域名（逗号分隔）：外链命中时弹窗显示"安全"样式，否则提示谨慎访问
   safeDomains: '',
   navbar: {
-    title: 'MerinDocs',
+    title: 'TinsurNote',
     buttons: [
       { text: '返回博客', url: 'https://www.tinsur.cn', target: '_blank' },
       { text: '文档首页', url: '/', target: '_self' },
@@ -19,9 +19,9 @@ const defaultConfig = {
   },
   footer: {
     copyrightText: 'Tinsur',
-    copyrightUrl: 'https://www.tinsur.cn/merindocs',
+    copyrightUrl: 'https://www.tinsur.cn/',
     poweredByText: 'MerinDocs文档系统',
-    poweredByUrl: 'https://www.tinsur.cn/merindocs',
+    poweredByUrl: 'https://github.com/Tinsur2005/MerinDocs',
     beian: {
       icpText: '',
       icpUrl: 'https://beian.miit.gov.cn/',

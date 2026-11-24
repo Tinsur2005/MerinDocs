@@ -766,7 +766,8 @@ body {
   /* width:100% 必须保留：margin: 0 auto 会让纵向 flex 容器里的子项
      放弃拉伸、按内容定宽，窄屏下被内容撑到 max-width 而溢出视口 */
   width: 100%;
-  max-width: 1180px;
+  /* 不设固定上限：大屏下正文铺满可用宽度，避免两侧留出大片空白 */
+  max-width: 100%;
   margin: 0 auto;
   min-width: 0;
 }
@@ -1670,7 +1671,7 @@ body {
   display: flex;
   flex-direction: column;
   width: 100%;
-  max-width: 1180px;
+  max-width: 100%;
   margin: 0 auto;
   min-width: 0;
 }
@@ -1764,7 +1765,7 @@ body {
 /* 加密文档密码页 */
 .doc-password-wrap {
   width: 100%;
-  max-width: 1180px;
+  max-width: 100%;
   margin: 0 auto;
   min-width: 0;
   display: flex;
