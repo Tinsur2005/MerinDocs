@@ -2,6 +2,7 @@
 import { ref, computed, watch, nextTick, onMounted, onUpdated, onBeforeUnmount } from 'vue';
 import TocNode from './TocNode.vue';
 import RedirectConfirm from './RedirectConfirm.vue';
+import DocMeta from './DocMeta.vue';
 import { showToast } from '../toast';
 
 const props = defineProps({
@@ -375,6 +376,8 @@ onBeforeUnmount(() => {
   <!-- 先渲染内容：切换文章时保留旧内容可见，避免整屏闪"加载中" -->
   <div v-if="doc" class="doc-layout doc-fade-in">
     <article class="doc-article">
+      <!-- 发布/更新时间信息条 -->
+      <DocMeta :published-at="doc.publishedAt" :updated-at="doc.updatedAt" />
       <!-- 加密文档提示条：仅解锁后的加密文档显示，可关闭 -->
       <div v-if="doc.protected && showProtectedNotice" class="protected-notice" role="note">
         <svg class="protected-notice-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">

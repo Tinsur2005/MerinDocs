@@ -6,6 +6,7 @@ import hljs from 'highlight.js';
 import { NOTE_DIR } from '../config.js';
 import { toUrlPath, safeDecode } from '../utils/path.js';
 import { extractPassword } from '../utils/protect.js';
+import { getTimestamps } from '../utils/timestamps.js';
 
 const require = createRequire(import.meta.url);
 
@@ -159,7 +160,7 @@ export function renderMarkdown(content, filePath) {
   return { html, toc: env.toc };
 }
 
-/** 渲染缓存：key = 文件绝对路径，value = { mtimeMs, title, html, toc, password } */
+/** 渲染缓存：key = 文件绝对路径，value = { mtimeMs, title, html, toc, password, publishedAt, updatedAt } */
 const renderCache = new Map();
 
 /**
@@ -177,12 +178,16 @@ export async function renderFile(absPath) {
   const { password, body } = extractPassword(raw);
   const { html, toc } = renderMarkdown(body, absPath);
   const titleMatch = body.match(/^#\s+(.+)$/m);
+  const relPath = path.relative(NOTE_DIR, absPath).split(path.sep).join('/');
+  const { publishedAt, updatedAt } = await getTimestamps(relPath, absPath);
   const entry = {
     mtimeMs: stat.mtimeMs,
     title: titleMatch ? titleMatch[1].trim() : '',
     html,
     toc,
     password,
+    publishedAt,
+    updatedAt,
   };
   renderCache.set(absPath, entry);
   return entry;

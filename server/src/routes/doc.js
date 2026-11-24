@@ -8,6 +8,7 @@ import { searchNotes, clearSearchCache } from '../services/search.js';
 import { getSiteConfig } from '../services/siteConfig.js';
 import { getLockRemaining, recordFailure, resetFailures } from '../services/rateLimit.js';
 import { hashPassword, verifyPassword } from '../utils/protect.js';
+import { getTimestamps, clearTimestampCache } from '../utils/timestamps.js';
 
 const router = Router();
 
@@ -79,6 +80,8 @@ function fullPayload(d) {
     toc: d.entry.toc,
     prev: d.prev,
     next: d.next,
+    publishedAt: d.entry.publishedAt,
+    updatedAt: d.entry.updatedAt,
     token: d.entry.password ? hashPassword(d.entry.password) : undefined,
   };
 }
@@ -93,14 +96,17 @@ router.get('/doc', async (req, res) => {
 
     const nav = await getNav(relPath);
 
-    // PDF：不渲染，返回预览地址与上下篇（无密码/TOC）
+    // PDF：不渲染，返回预览地址与上下篇（无密码/TOC），但同样带发布/更新时间
     if (/\.pdf$/i.test(relPath)) {
+      const { publishedAt, updatedAt } = await getTimestamps(relPath, nav.absPath);
       return res.json({
         kind: 'pdf',
         title: path.basename(relPath, path.extname(relPath)),
         category: nav.category,
         prev: nav.prev,
         next: nav.next,
+        publishedAt,
+        updatedAt,
         url: `/api/pdf?path=${encodeURIComponent(relPath)}`,
       });
     }
@@ -201,6 +207,7 @@ router.post('/refresh', (req, res) => {
   clearCache();
   clearRenderCache();
   clearSearchCache();
+  clearTimestampCache();
   res.json({ ok: true });
 });
 

@@ -1,5 +1,6 @@
 <script setup>
 import { ref, watch } from 'vue';
+import DocMeta from './DocMeta.vue';
 
 const props = defineProps({
   doc: { type: Object, required: true },
@@ -30,6 +31,8 @@ function onFrameLoad() {
         <a class="pdf-toolbar-btn" :href="doc.url" download>下载</a>
       </span>
     </div>
+
+    <DocMeta class="pdf-meta" :published-at="doc.publishedAt" :updated-at="doc.updatedAt" />
 
     <div class="pdf-frame-wrap">
       <iframe
